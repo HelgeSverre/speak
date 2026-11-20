@@ -1,0 +1,19 @@
+# "No Weights, No Net" — original words and music for speak's sing mode.
+# One note per syllable, 4/4, key of C, tempo 112.
+# Usage: speak --melody @tunes/no-weights-no-net.melody --tempo 112 -f tunes/no-weights-no-net.txt
+
+# Verse: 7 8 8 8 syllables
+C4 D4 E4 G4 A4 G4 E4:2 R:.5
+F4 A4 G4 F4 E4 F4 E4 G4:2 R:1
+C5 B4 A4 G4 E4 G4 A4 E4:2 R:.5
+A4 D4 E4 F4 E4 D4 C4 D4:2 R:1
+
+# Chorus: 8 8 7 7 syllables
+G4 A4 G4 E4 G4 A4 G4 C5:2 R:.5
+C5 B4 A4 G4 A4 G4 F4 G4:2 R:.5
+E4 F4 G4 A4 G4 F4 E4:2 R:.5
+D4 E4 F4 E4 D4 C4 C4:3 R:1
+
+# Tag: 8 8 syllables
+C4 E4 G4 A4 C5 B4 A4 G4 R:.5
+A4 G4 F4 E4 F4 G4 A4 C5:4 R:2

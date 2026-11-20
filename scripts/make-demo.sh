@@ -40,6 +40,7 @@ gen sing-daisy --sing=daisy
 gen sing-twinkle -v klatt-pip --sing=twinkle
 gen sing-ode -v klatt-calm --sing=ode
 gen sing-absolutely-right --melody @tunes/youre-absolutely-right.melody --tempo 52 -f tunes/youre-absolutely-right.txt
+gen sing-no-weights --melody @tunes/no-weights-no-net.melody --tempo 112 -f tunes/no-weights-no-net.txt
 gen sing-custom --melody 'C4 E4 G4 C5:2 G4 E4 C4:2' --tempo 140 'la la la la, do re mi fa'
 gen phonemes --phonemes 'HH AX L OW1 / F R AH1 M / R AO1 / F OW1 N IY2 M Z .'
 
@@ -52,7 +53,7 @@ else
     echo "skipping diphone clips: voice not built" >&2
 fi
 
-for clip in hello sing-daisy sing-absolutely-right voice-drama; do
+for clip in hello sing-daisy sing-absolutely-right sing-no-weights voice-drama; do
     video "$clip"
 done
 echo "demo/ regenerated"

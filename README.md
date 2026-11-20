@@ -97,12 +97,13 @@ In 1961 an IBM 704 sang *Daisy Bell*. `speak` does too. In sing mode each syllab
 | **Ode to Joy** — `speak -v klatt-calm --sing=ode` | [![ode](demo/sing-ode.jpg)](demo/sing-ode.mp3) |
 | **Your own notes** — `speak --melody 'C4 E4 G4 C5:2 G4 E4 C4:2' --tempo 140 'la la la la, do re mi fa'` | [![custom](demo/sing-custom.jpg)](demo/sing-custom.mp3) |
 | **"You're Absolutely Right!"** by [Lil' Backtick](https://backticks.no), verse 1 — melody transcribed from the recording, sung from a [notes file](tunes/youre-absolutely-right.melody) | [![right](demo/sing-absolutely-right.jpg)](demo/sing-absolutely-right.mp3) |
+| **"No Weights, No Net"** — original words and melody, written for this repo; 77 syllables, 77 notes | [![no weights](demo/sing-no-weights.jpg)](demo/sing-no-weights.mp3) |
 
 Any text can be sung to any tune: `speak --sing=ode "I have no idea what I am doing but it compiles"`.
 
 ### Videos
 
-Scrolling spectrogram and waveform, with sound: [hello](demo/hello.mp4) · [Daisy Bell](demo/sing-daisy.mp4) · [You're Absolutely Right](demo/sing-absolutely-right.mp4) · [klatt-drama](demo/voice-drama.mp4)
+Scrolling spectrogram and waveform, with sound: [hello](demo/hello.mp4) · [Daisy Bell](demo/sing-daisy.mp4) · [You're Absolutely Right](demo/sing-absolutely-right.mp4) · [No Weights, No Net](demo/sing-no-weights.mp4) · [klatt-drama](demo/voice-drama.mp4)
 
 ## Install
 
