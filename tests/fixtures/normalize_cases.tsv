@@ -1,0 +1,168 @@
+# input<TAB>expected normalized text (spec §7.1). One class per block.
+# currency
+$3.50	three dollars fifty
+$1	one dollar
+$1.00	one dollar
+$0.99	ninety nine cents
+$20	twenty dollars
+€20	twenty euros
+£1,000	one thousand pounds
+$5 million	five million dollars
+$2.5 billion	two point five billion dollars
+$5M	five million dollars
+$10k	ten thousand dollars
+It costs $12.05.	It costs twelve dollars five.
+# time
+5pm	five p m
+5 pm	five p m
+17:30	seventeen thirty
+9:05 a.m.	nine oh five a m
+9:00	nine o'clock
+12:45pm	twelve forty five p m
+at 5 p.m. Then we left.	at five p m. Then we left.
+14:00	fourteen hundred
+7am	seven a m
+# date
+2024-12-03	december third twenty twenty four
+12/03/2024	december third twenty twenty four
+Dec 3, 2024	december third twenty twenty four
+December 25	december twenty fifth
+Jan. 1, 1999	january first nineteen ninety nine
+July 4th	july fourth
+1/15/2026	january fifteenth twenty twenty six
+March 3 was cold	march third was cold
+# year
+1984	nineteen eighty four
+2005	two thousand five
+2026	twenty twenty six
+1900	nineteen hundred
+in 1969 we	in nineteen sixty nine we
+1969 dollars	one thousand nine hundred sixty nine dollars
+2000	two thousand
+1066	one thousand sixty six
+# ordinal
+3rd	third
+21st	twenty first
+1st	first
+2nd	second
+100th	one hundredth
+the 12th time	the twelfth time
+# decimal and cardinal
+3.14	three point one four
+1,234	one thousand two hundred thirty four
+-7	minus seven
+0	zero
+42	forty two
+1,000,000	one million
+0.5	zero point five
+.5	zero point five
+10000	ten thousand
+007	zero zero seven
+123456789012345678901	one two three four five six seven eight nine zero one two three four five six seven eight nine zero one
+# percent
+45%	forty five percent
+3.5%	three point five percent
+100%	one hundred percent
+# unit
+5km	five kilometers
+10 kg	ten kilograms
+3ms	three milliseconds
+2GB	two gigabytes
+60Hz	sixty hertz
+1km	one kilometer
+1 kg	one kilogram
+16 kHz	sixteen kilohertz
+5m	five meters
+100 mph	one hundred miles per hour
+72°F	seventy two degrees fahrenheit
+90°	ninety degrees
+1.5 GB	one point five gigabytes
+5 in the morning	five in the morning
+# range and fraction
+3-5	three to five
+1/2	one half
+3/4	three quarters
+2/3	two thirds
+10-20	ten to twenty
+7/2	seven over two
+# phone-like
+555-1234	five five five, one two three four
+1-800-555-0199	one, eight zero zero, five five five, zero one nine nine
+# abbreviation
+Dr. Smith	doctor Smith
+Mr. Jones	mister Jones
+Mrs. Jones	missus Jones
+St. Paul	saint Paul
+Main St. is long	Main street is long
+cats vs. dogs	cats versus dogs
+e.g. this	for example this
+i.e. that	that is that
+and so on, etc.	and so on, et cetera
+No. 5	number five
+Prof. Lee	professor Lee
+the U.S. economy	the u s economy
+J. K. Rowling	j k Rowling
+Acme Inc. Then	Acme incorporated. Then
+The cat sat.	The cat sat.
+The sun. It rose.	The sun. It rose.
+I said no.	I said no.
+See p. 12 and fig. 3.	See page twelve and figure three.
+On Sat. morning we left.	On saturday morning we left.
+The max. The min.	The max. The min.
+# url and email
+https://example.com/a	example dot com slash a
+a.b@c.io	a dot b at c dot i o
+www.rust-lang.org	w w w dot rust dash lang dot org
+example.com	example dot com
+http://localhost:8080/	localhost colon eight thousand eighty
+# identifier
+camelCase	camel Case
+snake_case	snake case
+foo-bar2	foo bar two
+parseHTML	parse h t m l
+well-known	well known
+getHTTPResponse	get h t t p Response
+x86	x eighty six
+# acronym
+FBI	f b i
+GPU	g p u
+NASA	NASA
+the CPU is hot	the c p u is hot
+I am OK	I am OK
+# symbol
+cats & dogs	cats and dogs
+2 + 2 = 4	two plus two equals four
+me @ home	me at home
+# 5	hash five
+#5	number five
+A/B	A slash B
+a ~ b	a approximately b
+50 °	fifty degrees
+# unknown characters
+hello 😀 world	hello world
+日本語 text	text
+café	cafe
+naïve	naive
+# punctuation and quotes
+"Hello," she said.	Hello, she said.
+Wait... what?	Wait… what?
+Really?!	Really?
+(aside) main	aside, main
+one — two	one — two
+it's	it's
+don't stop	don't stop
+‘quoted’ word	quoted word
+end.	end.
+Hello world	Hello world
+a - b	a — b
+# mixed sentences
+Dr. Smith paid $3.50 on 12/03/2024 at 5pm.	doctor Smith paid three dollars fifty on december third twenty twenty four at five p m.
+The budget is 1969 dollars	The budget is one thousand nine hundred sixty nine dollars
+Version 2.0 is out.	Version two point zero is out.
+Call 555-1234 now!	Call five five five, one two three four now!
+I have 3 cats, 2 dogs and 1 fish.	I have three cats, two dogs and one fish.
+It is 100% done; ship it.	It is one hundred percent done; ship it.
+Chapter 3: The End	Chapter three: The End
+pi is 3.14159.	pi is three point one four one five nine.
+The temperature is -5.	The temperature is minus five.
+He ran 5km in 25 min.	He ran five kilometers in twenty five min.

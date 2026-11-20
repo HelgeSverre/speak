@@ -1,0 +1,3 @@
+target/
+# Third-party papers: cited in docs/research, not redistributed here.
+docs/research/papers/

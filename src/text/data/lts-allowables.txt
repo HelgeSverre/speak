@@ -1,0 +1,29 @@
+# Allowable letter → phone pairs for letter/phone alignment (spec §7.5, CartLts step 1).
+# Written for this project. `_` = the letter is silent; `A-B` = the letter produces two phones.
+# Phones are CMUdict symbols without stress.
+a _ AA AE AH AO AW AY EH EY IH IY ER UH OW
+b _ B P
+c _ K S CH SH Z G T-S
+d _ D T JH
+e _ EH IY AH IH EY ER AA AY UW Y UH AE OW Y-UW
+f _ F V
+g _ G JH ZH F K
+h _ HH
+i _ IH AY IY AH Y EH ER AA AE
+j _ JH Y HH ZH
+k _ K
+l _ L AH-L
+m _ M AH-M
+n _ N NG AH-N
+o _ AA OW AH AO UW UH AW OY ER W IH EH W-AH
+p _ P F
+q _ K
+r _ R ER
+s _ S Z SH ZH
+t _ T CH SH DH TH D ZH
+u _ AH UW UH Y-UW Y-UH Y-AH Y W ER IH EH AW OW
+v _ V F
+w _ W V
+x _ K-S G-Z Z K-SH G-ZH K
+y _ Y IY AY IH AH EH
+z _ Z S ZH T-S

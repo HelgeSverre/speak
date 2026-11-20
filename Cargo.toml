@@ -1,0 +1,49 @@
+[package]
+name = "speak"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+description = "Offline text-to-speech with the command-line surface of macOS say. Every synthesis stage is our own code."
+default-run = "speak"
+
+[lib]
+name = "speak"
+path = "src/lib.rs"
+
+[[bin]]
+name = "speak"
+path = "src/bin/speak.rs"
+
+[[bin]]
+name = "speak-lab"
+path = "src/bin/speak-lab.rs"
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+cpal = "0.18"
+rtrb = "0.3"
+rubato = "5.1"
+hound = "3.5"
+realfft = "3.5"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+ctrlc = "3"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
+
+[profile.dev]
+opt-level = 1
+# No debug info: keeps target/ small (eight test binaries add up).
+debug = false
