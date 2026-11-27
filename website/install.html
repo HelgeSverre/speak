@@ -79,8 +79,7 @@ speak -b diphone "Hello."</code></pre></div>
     </section>
     <section class="extra">
       <h3>SidePulse strip</h3>
-      <p>Plug in a <a href="https://sidepulse.io/pro">SidePulse Pro</a> and <code>speak</code> shows a mouth on its eight LEDs while it talks. Nothing to configure.</p>
-      <div class="block"><button class="copy" data-copy="#x-pulse">Copy</button><pre id="x-pulse" data-lang="sh"><code>speak --no-lights "Not now."</code></pre></div>
+      <p>Plug in a <a href="https://sidepulse.io/pro">SidePulse Pro</a> and <code>speak</code> shows a mouth on its eight LEDs while it talks. Nothing to configure. To keep the strip out of it, pass <code>--no-lights</code> or set <code>lights = false</code> in the config.</p>
     </section>
     <section class="extra">
       <h3>Defaults</h3>
@@ -89,11 +88,6 @@ speak -b diphone "Hello."</code></pre></div>
 
 [klatt]
 voice = "klatt-female"</code></pre></div>
-    </section>
-    <section class="extra">
-      <h3>This website</h3>
-      <p>Builds the engine to WebAssembly with wasm-pack and serves it locally.</p>
-      <div class="block"><button class="copy" data-copy="#x-site">Copy</button><pre id="x-site" data-lang="sh"><code>just site</code></pre></div>
     </section>
   </div>
 
