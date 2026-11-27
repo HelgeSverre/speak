@@ -148,17 +148,18 @@ a > code {
   background: var(--ink-2);
   border: 1px solid var(--line);
   border-radius: 12px;
-  overflow-x: auto;
+  overflow: hidden;
 }
 .block pre {
   margin: 0;
   padding: 16px 20px;
-  padding-right: 80px;
+  padding-right: 84px;
   font: 500 13.5px/1.75 var(--mono);
   color: var(--tok-plain);
   white-space: pre;
-  width: fit-content;
-  min-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 .block .copy {
   position: absolute;
@@ -288,37 +289,84 @@ td:first-child {
 }
 
 .extras {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-  gap: 14px;
-  margin-top: 16px;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--ink-2);
+  overflow: hidden;
 }
 .extra {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  padding: 20px 22px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--ink-2);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 28px;
+  align-items: center;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--line);
+}
+.extra:last-child {
+  border-bottom: 0;
+}
+/* A command too long to sit beside its text goes under it, full width. */
+.extra.stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.extra.stacked p {
+  max-width: 44em;
 }
 .extra h3 {
-  margin: 0;
+  margin: 0 0 6px;
 }
 .extra p {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 14px;
-  flex: 1;
+  line-height: 1.6;
 }
 .extra .block {
   margin: 0;
+  background: var(--ink);
 }
 .extra .block pre {
-  padding: 12px 16px;
-  padding-right: 72px;
-  font-size: 12.5px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  width: auto;
+  padding: 13px 16px;
+  padding-right: 76px;
+  font-size: 13px;
+}
+.extra .block .copy {
+  background: var(--ink);
+}
+@media (max-width: 760px) {
+  .extra {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+}
+
+/* A SidePulse strip showing an open mouth that breathes. */
+.led-demo {
+  display: flex;
+  gap: 10px;
+  width: fit-content;
+  padding: 14px 18px;
+  border-radius: 24px;
+  background: #050407;
+  border: 1px solid var(--line);
+}
+.led-demo i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 14px 2px var(--c);
+  animation: mouth 1.6s ease-in-out infinite;
+}
+.led-demo i:nth-child(1), .led-demo i:nth-child(8) { --c: #3b0f6f; animation-delay: 0.3s; }
+.led-demo i:nth-child(2), .led-demo i:nth-child(7) { --c: #8c2981; animation-delay: 0.2s; }
+.led-demo i:nth-child(3), .led-demo i:nth-child(6) { --c: #de4968; animation-delay: 0.1s; }
+.led-demo i:nth-child(4), .led-demo i:nth-child(5) { --c: #fe9f6d; }
+@keyframes mouth {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  45% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .led-demo i { animation: none; }
 }

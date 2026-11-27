@@ -346,6 +346,9 @@ function highlightSh(src) {
         }
         if (first) {
           first = false;
+          // NAME=value is an assignment, not a command.
+          const a = m.match(/^([A-Za-z_]\w*)=(.*)$/);
+          if (a) return `${span("key", a[1])}=${span("str", a[2])}`;
           return span("cmd", m);
         }
         if (/^['"]/.test(m)) return span("str", m);

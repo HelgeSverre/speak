@@ -61,33 +61,56 @@ cargo install --path .</code></pre></div>
   <h2>Extras</h2>
   <p>All optional. <code>speak</code> works without any of them.</p>
   <div class="extras">
-    <section class="extra">
-      <h3>Pronunciation dictionary</h3>
-      <p>The CMU Pronouncing Dictionary, 126,000 words, fetched at a pinned revision and checksum-verified. Without it, words outside the built-in lexicon go through the letter-to-sound tree.</p>
-      <div class="block"><button class="copy" data-copy="#x-lex">Copy</button><pre id="x-lex" data-lang="sh"><code>speak-lab lexicon build &quot;$(curl -fsSL https://raw.githubusercontent.com/HelgeSverre/speak/main/scripts/fetch-cmudict.sh | sh | tail -1)&quot;</code></pre></div>
+    <section class="extra stacked">
+      <div class="extra-text">
+        <h3>Pronunciation dictionary</h3>
+        <p>The CMU Pronouncing Dictionary, 126,000 words, fetched at a pinned revision and checksum-verified. Without it, words outside the built-in lexicon go through the letter-to-sound tree.</p>
+      </div>
+      <div class="extra-code">
+        <div class="block"><button class="copy" data-copy="#x-lex">Copy</button><pre id="x-lex" data-lang="sh"><code>url=https://raw.githubusercontent.com/HelgeSverre/speak/main/scripts/fetch-cmudict.sh
+dict=$(curl -fsSL &quot;$url&quot; | sh | tail -1)
+speak-lab lexicon build &quot;$dict&quot;</code></pre></div>
+      </div>
     </section>
     <section class="extra">
-      <h3>Diphone voice</h3>
-      <p>The second backend: 2,013 diphones analysed from the formant synthesizer, built in about 12 seconds.</p>
-      <div class="block"><button class="copy" data-copy="#x-voice">Copy</button><pre id="x-voice" data-lang="sh"><code>speak-lab diphones build --bootstrap
-speak -b diphone "Hello."</code></pre></div>
+      <div class="extra-text">
+        <h3>Diphone voice</h3>
+        <p>The second backend: 2,013 diphones analysed from the formant synthesizer, built in about 12 seconds.</p>
+      </div>
+      <div class="extra-code">
+        <div class="block"><button class="copy" data-copy="#x-voice">Copy</button><pre id="x-voice" data-lang="sh"><code>speak-lab diphones build --bootstrap
+speak -b diphone &quot;Hello.&quot;</code></pre></div>
+      </div>
     </section>
     <section class="extra">
-      <h3>Coding agents</h3>
-      <p>An MCP server on stdio with <code>speak</code> and <code>list_voices</code> tools, so an agent can talk to you.</p>
-      <div class="block"><button class="copy" data-copy="#x-mcp">Copy</button><pre id="x-mcp" data-lang="sh"><code>claude mcp add --scope user speak -- speak --mcp</code></pre></div>
+      <div class="extra-text">
+        <h3>Coding agents</h3>
+        <p>An MCP server on stdio with <code>speak</code> and <code>list_voices</code> tools, so an agent can talk to you.</p>
+      </div>
+      <div class="extra-code">
+        <div class="block"><button class="copy" data-copy="#x-mcp">Copy</button><pre id="x-mcp" data-lang="sh"><code>claude mcp add --scope user speak -- speak --mcp</code></pre></div>
+      </div>
     </section>
     <section class="extra">
-      <h3>SidePulse strip</h3>
-      <p>Plug in a <a href="https://sidepulse.io/pro">SidePulse Pro</a> and <code>speak</code> shows a mouth on its eight LEDs while it talks. Nothing to configure. To keep the strip out of it, pass <code>--no-lights</code> or set <code>lights = false</code> in the config.</p>
+      <div class="extra-text">
+        <h3>SidePulse strip</h3>
+        <p>Plug in a <a href="https://sidepulse.io/pro">SidePulse Pro</a> and <code>speak</code> shows a mouth on its eight LEDs while it talks. Nothing to configure. <code>--no-lights</code> or <code>lights = false</code> keeps the strip out of it.</p>
+      </div>
+      <div class="extra-code">
+        <div class="led-demo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
     </section>
     <section class="extra">
-      <h3>Defaults</h3>
-      <p>Voice, rate and named voices in a config file. See <a href="docs.html#files">Files</a>.</p>
-      <div class="block"><button class="copy" data-copy="#x-cfg">Copy</button><pre id="x-cfg" data-lang="toml"><code>rate = 190
+      <div class="extra-text">
+        <h3>Defaults</h3>
+        <p>Voice, rate and named voices in <code>~/.config/speak/config.toml</code>. See <a href="docs.html#files">Files</a>.</p>
+      </div>
+      <div class="extra-code">
+        <div class="block"><button class="copy" data-copy="#x-cfg">Copy</button><pre id="x-cfg" data-lang="toml"><code>rate = 190
 
 [klatt]
-voice = "klatt-female"</code></pre></div>
+voice = &quot;klatt-female&quot;</code></pre></div>
+      </div>
     </section>
   </div>
 
