@@ -1,0 +1,3 @@
+# website/pkg is gitignored but must be deployed; this file replaces .gitignore for Vercel.
+.vercel
+.env*

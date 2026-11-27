@@ -20,3 +20,7 @@ include = ["NOTICE"]
 
 [dist.dependencies.apt]
 libasound2-dev = "*"
+
+# GitHub retired the macos-14 image that dist 0.32 picks for Apple Silicon.
+[dist.github-custom-runners]
+aarch64-apple-darwin = "macos-15"

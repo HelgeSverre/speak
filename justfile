@@ -130,6 +130,11 @@ wasm:
 site: wasm
     python3 -m http.server 8000 --bind 127.0.0.1 --directory website
 
+# Build the browser engine and deploy the website to Vercel (project speak).
+[group('web')]
+deploy: wasm
+    cd website && vercel deploy --prod --yes --scope helgesverre
+
 # ── demo ──────────────────────────────────────────────────────────────
 
 # Regenerate the README clips in demo/ (MP3, spectrogram, videos); needs ffmpeg.
