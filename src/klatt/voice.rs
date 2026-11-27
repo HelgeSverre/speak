@@ -223,6 +223,12 @@ pub const PARAM_KEYS: &[&str] = &[
     "formant_scale",
     "breath",
     "sq",
+    "jitter",
+    "shimmer",
+    "fry",
+    "range",
+    "pace",
+    "pause",
 ];
 
 impl Voice {

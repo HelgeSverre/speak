@@ -1,8 +1,8 @@
 //! The `.pho` text format: timed phones, the seam between frontend and backends (spec §6.4).
 
-use crate::chunk::{Chunk, Segment, Unit};
+use crate::chunk::{Chunk, Controls, Segment, Terminator, Unit};
 use crate::error::{Error, Result};
-use crate::phone::{Phone, parse_phone_token, phone_token};
+use crate::phone::{Phone, parse_arpabet, parse_phone_token, phone_token, print_arpabet};
 
 /// Prints one chunk. Word breaks and punctuation carry no duration and are not printed.
 pub fn print_pho(chunk: &Chunk, out: &mut String) {
@@ -29,7 +29,8 @@ pub fn print_pho(chunk: &Chunk, out: &mut String) {
     }
 }
 
-/// Parses a `.pho` document into chunks. A `; chunk` comment starts a new chunk.
+/// Parses a `.pho` document into chunks. A `; chunk` comment starts a new chunk. `|` also
+/// ends a line, so a whole document fits on one command line.
 pub fn parse_pho(text: &str) -> Result<Vec<Chunk>> {
     let mut chunks: Vec<Chunk> = Vec::new();
     let mut cur: Option<Chunk> = None;
@@ -39,7 +40,11 @@ pub fn parse_pho(text: &str) -> Result<Vec<Chunk>> {
         timed: true,
         ..Chunk::default()
     };
-    for (n, raw) in text.lines().enumerate() {
+    let lines = text.lines().flat_map(|l| {
+        let comment = l.trim_start().starts_with(';');
+        l.split(move |c| c == '|' && !comment)
+    });
+    for (n, raw) in lines.enumerate() {
         let line = raw.trim();
         if line.is_empty() {
             continue;
@@ -89,10 +94,64 @@ pub fn parse_pho(text: &str) -> Result<Vec<Chunk>> {
     Ok(chunks)
 }
 
+/// Chunks from ARPAbet text: one per sentence mark.
+pub fn arpabet_chunks(text: &str, controls: Controls) -> Result<Vec<Chunk>> {
+    let units = parse_arpabet(text)?;
+    let mut chunks = Vec::new();
+    let mut cur: Vec<Unit> = Vec::new();
+    let mut flush = |cur: &mut Vec<Unit>, terminator: Terminator| {
+        while matches!(cur.first(), Some(Unit::WordBreak)) {
+            cur.remove(0);
+        }
+        if cur
+            .iter()
+            .any(|u| matches!(u, Unit::Seg(_) | Unit::Silence { .. }))
+        {
+            chunks.push(Chunk {
+                index: chunks.len(),
+                text: print_arpabet(cur),
+                units: std::mem::take(cur),
+                terminator,
+                pause_after_ms: terminator.pause_ms() / controls.rate,
+                controls,
+                ..Chunk::default()
+            });
+        }
+        cur.clear();
+    };
+    for u in units {
+        let mark = if let Unit::Punct(c) = u {
+            Some(c)
+        } else {
+            None
+        };
+        cur.push(u);
+        if let Some(c @ ('.' | '?' | '!')) = mark {
+            flush(&mut cur, Terminator::from_char(c));
+        }
+    }
+    let last = match cur.last() {
+        Some(Unit::Punct(c)) => Terminator::from_char(*c),
+        _ => Terminator::None,
+    };
+    flush(&mut cur, last);
+    Ok(chunks)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::phone::Stress;
+
+    #[test]
+    fn bars_separate_lines() {
+        let one =
+            parse_pho("; chunk 0  \"a | b\"\nHH 50 | AA1 120  0 110  100 100 | _ 60").unwrap();
+        let many = parse_pho("HH 50\nAA1 120  0 110  100 100\n_ 60").unwrap();
+        assert_eq!(one.len(), 1);
+        assert_eq!(one[0].text, "a | b");
+        assert_eq!(one[0].units, many[0].units);
+    }
 
     #[test]
     fn round_trip() {

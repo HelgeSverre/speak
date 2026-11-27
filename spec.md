@@ -1109,7 +1109,7 @@ Environment: `SPEAK_CONFIG`, `SPEAK_DATA_DIR`, `SPEAK_BACKEND`, `SPEAK_VOICE`. A
 
 ## 14. Licensing and provenance
 
-1. `speak` source: MIT OR Apache-2.0. All synthesis, analysis and text-processing code is written for this project.
+1. `speak` source: MIT. All synthesis, analysis and text-processing code is written for this project.
 2. Dependencies are general-purpose libraries under MIT, Apache-2.0, BSD, ISC, Zlib or Unicode licences (§5). `deny.toml` holds that allowlist; `cargo deny check licenses` must pass.
 3. `scripts/check-deps.sh` fails if the default build's `cargo tree` contains any of: `ort`, `onnx`, `tract`, `candle`, `burn`, `tch`, `espeak`, `misaki`, `piper`, `kokoro`, `num2words`, `hf-hub`, `reqwest`, `ureq`.
 4. No pretrained weights or third-party voice data anywhere: not in the repository, not downloaded, not loaded.

@@ -3,6 +3,7 @@
 //! The filter is measured from audio (here: from our own formant synthesizer's output, or from
 //! recordings), stored per diphone as reflection coefficients, and driven by our own excitation.
 
+#[cfg(feature = "cli")]
 pub mod autolabel;
 pub mod backend;
 pub mod build;

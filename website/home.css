@@ -1,0 +1,745 @@
+/* Home: a full-screen instrument. Always dark; the spectrogram is the page.
+ * The shared parts (tokens, nav, inputs, playhead) are also used by voices.css. */
+
+:root {
+  --ink: #000004;
+  --ink-2: #0c0a14;
+  --ink-3: #15121f;
+  --line: rgba(255, 255, 255, 0.09);
+  --fg: #f4f2f8;
+  --fg-2: rgba(244, 242, 248, 0.62);
+  --fg-3: rgba(244, 242, 248, 0.38);
+  --hot: #fe9f6d;
+  --hotter: #fcfdbf;
+  --rose: #de4968;
+  --plum: #8c2981;
+  --magma: linear-gradient(90deg, var(--plum), var(--rose) 40%, var(--hot) 75%, var(--hotter));
+  /* Raised: a soft top highlight and a darker base over the magma ramp. */
+  --raised: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0.12) 52%, rgba(0, 0, 0, 0.22)),
+    linear-gradient(90deg, var(--plum), var(--rose) 38%, var(--hot) 78%, #ffd59a);
+  --raised-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 3px rgba(60, 0, 40, 0.35),
+    0 2px 10px rgba(222, 73, 104, 0.35);
+  --font: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --tok-cmd: #fcfdbf;
+  --tok-flag: #fe9f6d;
+  --tok-str: #f4a8c0;
+  --tok-plain: #f4f2f8;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font: 400 15px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+:focus-visible {
+  outline: 2px solid var(--hotter);
+  outline-offset: 2px;
+}
+
+button {
+  font: 600 14px var(--font);
+  cursor: pointer;
+}
+
+select,
+input:not([type="range"], [type="checkbox"], [type="radio"]) {
+  font: 500 14px var(--font);
+  color: var(--fg);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 36px;
+  padding: 0 10px;
+  width: 100%;
+}
+select:focus,
+input:focus {
+  border-color: var(--hot);
+  outline: 0;
+}
+::placeholder {
+  color: var(--fg-3);
+}
+
+.cmdline .arg {
+  display: block;
+  padding-left: 4ch;
+  text-indent: -2ch;
+}
+.cmdline .arg.first {
+  padding-left: 2ch;
+}
+.cmdline .arg:not(:last-child)::after {
+  content: " \\";
+  color: var(--fg-3);
+}
+.tok-cmd { color: var(--tok-cmd); white-space: nowrap; }
+.tok-flag { color: var(--tok-flag); white-space: nowrap; }
+.tok-str { color: var(--tok-str); }
+.tok-plain { color: var(--tok-plain); }
+
+.err {
+  margin: 0;
+  font-size: 13px;
+  color: var(--rose);
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--hotter);
+  box-shadow: 0 0 18px 2px rgba(252, 253, 191, 0.55);
+  pointer-events: none;
+  will-change: transform;
+  z-index: 3;
+}
+
+/* ── Stage ───────────────────────────────────────────────── */
+
+.stage {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "top" "field" "controls" "sing" "scope" "bar";
+  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) 0 max(20px, env(safe-area-inset-left, 0px));
+}
+
+.top { grid-area: top; }
+.field { grid-area: field; }
+.controls { grid-area: controls; }
+.singbar { grid-area: sing; }
+.scope { grid-area: scope; }
+.bar { grid-area: bar; }
+
+/* The navbar, identical on every page: full width, a hairline under it. */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) 0 max(20px, env(safe-area-inset-left, 0px));
+  background: rgba(0, 0, 4, 0.82);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+/* On the home page the stage already pads the sides and the top. */
+.stage > .top {
+  margin: calc(-1 * env(safe-area-inset-top, 0px)) calc(-1 * max(20px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(20px, env(safe-area-inset-left, 0px)));
+}
+.top nav a[aria-current="page"] {
+  color: var(--fg);
+}
+.mark {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--fg);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.top nav {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.top nav a {
+  color: var(--fg-2);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.top nav a:hover {
+  color: var(--fg);
+}
+
+/* ── Text field with the play button inside ──────────────── */
+
+.field {
+  position: relative;
+  margin: 1.5vh 0 14px;
+}
+.say {
+  display: block;
+  width: 100%;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  outline: 0;
+  background: var(--ink-2);
+  color: var(--fg);
+  font: 700 clamp(24px, 3.4vw, 50px) / 1.15 var(--font);
+  letter-spacing: -0.025em;
+  padding: 0.42em 3.2em 0.5em 0.6em;
+  caret-color: var(--hot);
+  field-sizing: content;
+  min-height: 2em;
+  max-height: 28vh;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.say:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.say:focus {
+  border-color: rgba(254, 159, 109, 0.7);
+  box-shadow: 0 0 0 4px rgba(254, 159, 109, 0.12);
+}
+.say::selection {
+  background: rgba(254, 159, 109, 0.35);
+}
+.play {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(48px, 4.6vw, 64px);
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: var(--raised);
+  background-origin: border-box;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--raised-shadow), 0 6px 30px rgba(222, 73, 104, 0.35);
+  transition: transform 0.12s, box-shadow 0.2s;
+}
+.play:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: var(--raised-shadow), 0 8px 40px rgba(254, 159, 109, 0.45);
+}
+.play:disabled {
+  opacity: 0.35;
+  cursor: wait;
+}
+.play svg {
+  width: 44%;
+  fill: currentColor;
+}
+.play .i-stop,
+.play.on .i-play {
+  display: none;
+}
+.play.on .i-stop {
+  display: block;
+}
+
+/* ── Voice chips and the rate ruler ──────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.voices {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, #000 92%, transparent);
+  padding: 2px;
+}
+.chip {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  color: var(--fg-2);
+  font: 600 13px var(--font);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.chip:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.chip[aria-checked="true"],
+.mode button[aria-checked="true"],
+.preset.on {
+  color: #1a0610;
+  border-color: transparent;
+  background: var(--raised);
+  background-origin: border-box;
+  box-shadow: var(--raised-shadow);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mode {
+  flex: none;
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 21px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+}
+.mode button {
+  height: 30px;
+  padding: 0 16px;
+  border-radius: 15px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-2);
+  font: 700 13px var(--font);
+}
+.mode button:hover {
+  color: var(--fg);
+}
+
+.singbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: -4px 0 16px;
+  min-width: 0;
+}
+.presets {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+.preset {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  color: var(--fg-2);
+  font: 600 12px var(--font);
+}
+.preset:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.melody.bad {
+  border-color: var(--rose) !important;
+}
+.melody {
+  flex: 1;
+  min-width: 0;
+  height: 34px !important;
+  border-radius: 17px !important;
+  padding: 0 14px !important;
+  font: 500 13px var(--mono) !important;
+  color: var(--hotter) !important;
+}
+
+.rate {
+  flex: none;
+  position: relative;
+  width: 220px;
+  height: 36px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9px, rgba(255, 255, 255, 0.1) 9px 10px) center / 100% 40% no-repeat,
+    var(--ink-2);
+  cursor: ew-resize;
+  touch-action: none;
+  overflow: hidden;
+  user-select: none;
+}
+.rate:focus-visible {
+  outline-offset: 2px;
+}
+.rate-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 25%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 50%, rgba(0, 0, 0, 0.2)),
+    linear-gradient(90deg, rgba(140, 41, 129, 0.6), rgba(254, 159, 109, 0.85));
+  border-right: 2px solid var(--hotter);
+}
+.rate-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: 500 12px var(--mono);
+  color: var(--fg-2);
+  pointer-events: none;
+}
+.rate-label b {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+/* ── Spectrogram, pitch curve ────────────────────────────── */
+
+.scope {
+  position: relative;
+  min-height: 180px;
+  margin-inline: calc(-1 * max(20px, env(safe-area-inset-left, 0px)));
+  border-block: 1px solid var(--line);
+  background: var(--ink);
+  overflow: hidden;
+}
+#spec {
+  position: absolute;
+  inset: 32px 0 0;
+  width: 100%;
+  height: calc(100% - 32px);
+  display: block;
+}
+.words {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 32px;
+  font: 500 13px/32px var(--font);
+  color: var(--fg-3);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+.words span {
+  position: absolute;
+  top: 0;
+  padding-left: 6px;
+  border-left: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.1s linear;
+}
+.words span.now {
+  color: var(--hotter);
+  border-left-color: var(--hot);
+}
+.words span.said {
+  color: var(--fg-2);
+}
+
+.pitch {
+  position: absolute;
+  inset: 32px 0 0;
+  width: 100%;
+  height: calc(100% - 32px);
+  overflow: visible;
+  z-index: 2;
+}
+.pitch .curve {
+  fill: none;
+  stroke: var(--hotter);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(252, 253, 191, 0.6));
+}
+.pitch .shadow {
+  fill: none;
+  stroke: rgba(0, 0, 4, 0.75);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+.pitch .grid {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-dasharray: 2 6;
+}
+.pitch .grid-label {
+  fill: var(--fg-3);
+  font: 500 10px var(--mono);
+}
+.pitch .dot {
+  fill: var(--ink);
+  stroke: var(--hotter);
+  stroke-width: 2;
+  cursor: ns-resize;
+}
+.pitch .dot:hover,
+.pitch .dot.drag {
+  fill: var(--hotter);
+}
+.pitch .hit {
+  fill: transparent;
+  cursor: ns-resize;
+}
+.pitch .hz {
+  fill: var(--hotter);
+  font: 600 11px var(--mono);
+  paint-order: stroke;
+  stroke: var(--ink);
+  stroke-width: 3px;
+}
+
+.pitch .row-line {
+  stroke: rgba(255, 255, 255, 0.05);
+}
+.pitch .row-line.c {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+.pitch .row-label {
+  fill: var(--fg-3);
+  font: 500 10px var(--mono);
+}
+.pitch .note rect {
+  fill: url(#note-fill);
+  stroke: rgba(252, 253, 191, 0.85);
+  stroke-width: 1;
+  cursor: ns-resize;
+}
+.pitch .note.loop rect {
+  opacity: 0.55;
+}
+.pitch .note.drag rect,
+.pitch .note:hover rect {
+  stroke: var(--hotter);
+  stroke-width: 2;
+}
+.pitch .note text {
+  fill: #1a0610;
+  font: 700 10px var(--mono);
+  pointer-events: none;
+}
+.pitch .note .edge {
+  fill: transparent;
+  stroke: none;
+  cursor: ew-resize;
+}
+
+.veil {
+  position: absolute;
+  top: 32px;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background: rgba(0, 0, 4, 0.62);
+  pointer-events: none;
+  z-index: 1;
+}
+.hud {
+  position: absolute;
+  left: 12px;
+  top: 42px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 4;
+}
+.hud span {
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 4, 0.72);
+  font: 500 12px var(--mono);
+  color: var(--fg-3);
+}
+.hud span.err {
+  color: var(--rose);
+}
+.reset {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(254, 159, 109, 0.5);
+  background: rgba(0, 0, 4, 0.72);
+  color: var(--hot);
+  font-size: 12px;
+}
+.hint-pitch {
+  position: absolute;
+  right: 14px;
+  top: 42px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 4, 0.72);
+  font: 500 12px var(--font);
+  color: var(--fg-2);
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity 0.4s;
+}
+.hint-pitch.gone {
+  opacity: 0;
+}
+
+
+/* ── Footer: LEDs and the command ────────────────────────── */
+
+.pulse {
+  position: relative;
+  flex: none;
+  border-radius: 20px;
+}
+.pop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 12px);
+  width: 300px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ink-3);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  z-index: 10;
+}
+/* A bridge so the pointer can travel from the strip to the card. */
+.pop::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+}
+.pulse:hover .pop,
+.pulse:focus-within .pop {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.pop strong {
+  display: block;
+  color: var(--fg);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.pop p {
+  margin: 0 0 8px;
+}
+.pop code {
+  font: 500 12px var(--mono);
+  color: var(--hotter);
+}
+.pop a {
+  color: var(--hot);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pop a:hover {
+  text-decoration: underline;
+}
+.pulse:hover .strip {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.strip {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(8, 12px);
+  gap: 6px;
+  padding: 11px 14px;
+  border-radius: 20px;
+  background: #050407;
+  border: 1px solid var(--line);
+}
+.strip i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--led, #0e0c14);
+  box-shadow: 0 0 12px 2px var(--glow, transparent);
+}
+.cmdline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px 5px 5px 14px;
+}
+.cmdline {
+  align-items: flex-start;
+}
+.cmdline pre {
+  flex: 1;
+  margin: 0;
+  padding: 1px 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-height: calc(6 * 22px + 2px);
+  overflow-y: auto;
+  font: 500 13px/22px var(--mono);
+}
+.copy {
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.copy:hover {
+  color: var(--fg);
+  border-color: var(--fg-3);
+}
+.copy.done {
+  color: var(--hot);
+  border-color: var(--hot);
+}
+
+@media (max-width: 760px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .rate {
+    width: 100%;
+  }
+  .bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .pulse {
+    display: none;
+  }
+  .hint-pitch {
+    display: none;
+  }
+}

@@ -116,6 +116,31 @@ impl Default for Controls {
     }
 }
 
+impl Controls {
+    /// `--pitch`: Hz (`110`) or semitones (`+2st`).
+    pub fn set_pitch(&mut self, s: &str) -> crate::Result<()> {
+        let bad = || {
+            crate::Error::usage(format!(
+                "--pitch {s}: expected Hz (110) or semitones (+2st)"
+            ))
+        };
+        if let Some(st) = s.strip_suffix("st") {
+            let v: f32 = st.parse().map_err(|_| bad())?;
+            if !(-24.0..=24.0).contains(&v) {
+                return Err(bad());
+            }
+            self.pitch_shift_st = v;
+        } else {
+            let v: f32 = s.parse().map_err(|_| bad())?;
+            if !(40.0..=500.0).contains(&v) {
+                return Err(bad());
+            }
+            self.pitch_base_hz = Some(v);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Segment {
     pub phone: Phone,

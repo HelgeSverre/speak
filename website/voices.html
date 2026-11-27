@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voices · speak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="The eleven voices of speak and its sing mode, rendered live in the browser.">
+<meta name="theme-color" content="#000004">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="voices.css">
+<link rel="modulepreload" href="engine.js">
+<link rel="preload" href="pkg/speak_bg.wasm" as="fetch" type="application/wasm" crossorigin>
+</head>
+<body class="split-page">
+<header class="top">
+  <a class="mark" href="./"><img src="logo.svg" alt="" width="20" height="20">speak</a>
+  <nav>
+    <a href="./">Try it</a>
+    <a href="voices.html" aria-current="page">Voices</a>
+    <a href="docs.html">Docs</a>
+    <a href="install.html">Install</a>
+    <a href="https://github.com/HelgeSverre/speak">GitHub</a>
+  </nav>
+</header>
+
+<main class="split">
+  <section class="half" aria-labelledby="voices-h">
+    <div class="half-head">
+      <h1 id="voices-h">Voices</h1>
+      <label class="sr" for="sentence">Sentence every voice says</label>
+      <input id="sentence" class="line" value="The quick brown fox jumps over the lazy dog." spellcheck="false">
+    </div>
+    <ol class="rows" id="voice-rows"></ol>
+  </section>
+
+  <section class="half" aria-labelledby="sing-h">
+    <div class="half-head">
+      <h1 id="sing-h">Sing</h1>
+      <div class="sing-form" id="sing-form">
+        <label class="sr" for="melody">Melody</label>
+        <input id="melody" class="line mono" value="C4 E4 G4 C5:2 G4 E4 C4:2 R E4 G4 C5:4" spellcheck="false" placeholder="C4 D4:2 E4 R">
+        <label class="sr" for="lyrics">Words</label>
+        <input id="lyrics" class="line" value="la la la la, do re mi fa so la ti do" spellcheck="false" placeholder="Words, one syllable per note">
+        <div class="sing-knobs">
+          <label>Voice <select id="sing-voice"></select></label>
+          <label>Tempo <input id="tempo" type="number" value="140" min="20" max="400"></label>
+          <label>Key <input id="key" type="number" value="0" min="-24" max="24"></label>
+        </div>
+      </div>
+    </div>
+    <ol class="rows" id="sing-rows"></ol>
+  </section>
+</main>
+
+<script type="module" src="voices.js"></script>
+</body>
+</html>

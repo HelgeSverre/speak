@@ -3,33 +3,50 @@ name = "speak"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
-license = "MIT OR Apache-2.0"
-description = "Offline text-to-speech with the command-line surface of macOS say. Every synthesis stage is our own code."
+license = "MIT"
+description = "Offline text-to-speech with the command-line surface of macOS say"
 default-run = "speak"
+repository = "https://github.com/HelgeSverre/speak"
+homepage = "https://github.com/HelgeSverre/speak"
+readme = "README.md"
 
 [lib]
 name = "speak"
 path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = ["cli", "mcp"]
+# The speak and speak-lab binaries: argument parsing, audio devices, config files.
+cli = ["dep:clap", "dep:cpal", "dep:rtrb", "dep:ctrlc", "dep:toml"]
+# `speak --mcp`: a Model Context Protocol server on stdio, for coding agents.
+mcp = ["cli", "dep:serde_json"]
+# Browser bindings (`wasm-pack build --no-default-features --features wasm`).
+wasm = ["dep:wasm-bindgen"]
 
 [[bin]]
 name = "speak"
 path = "src/bin/speak.rs"
+required-features = ["cli"]
 
 [[bin]]
 name = "speak-lab"
 path = "src/bin/speak-lab.rs"
+required-features = ["cli"]
 
 [dependencies]
-clap = { version = "4.6", features = ["derive"] }
-cpal = "0.18"
-rtrb = "0.3"
+clap = { version = "4.6", features = ["derive"], optional = true }
+cpal = { version = "0.18", optional = true }
+rtrb = { version = "0.4", optional = true }
 rubato = "5.1"
 hound = "3.5"
 realfft = "3.5"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
-toml = "0.9"
-ctrlc = "3"
+serde_json = { version = "1", optional = true }
+toml = { version = "1.2", optional = true }
+ctrlc = { version = "3", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -47,3 +64,7 @@ strip = true
 opt-level = 1
 # No debug info: keeps target/ small (eight test binaries add up).
 debug = false
+
+# The profile that dist builds release archives with.
+[profile.dist]
+inherits = "release"

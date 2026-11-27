@@ -1,0 +1,324 @@
+/* Docs and Install: reading pages in the home page's dark style. Builds on home.css. */
+
+body.page {
+  overflow: auto;
+}
+html {
+  scroll-padding-top: 80px;
+}
+
+
+a {
+  color: var(--hot);
+  text-decoration: none;
+  font-weight: 500;
+}
+a:hover {
+  color: var(--hotter);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+
+.layout {
+  display: flex;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.sidebar {
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
+  width: 240px;
+  flex-shrink: 0;
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
+  padding: 36px 24px 80px max(24px, env(safe-area-inset-left, 0px));
+  scrollbar-width: thin;
+}
+.sidebar h2 {
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.sidebar ul {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+.sidebar a {
+  display: block;
+  padding: 5px 10px;
+  margin-left: -10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--fg-2);
+}
+.sidebar a:hover,
+.sidebar a.on {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.05);
+  text-decoration: none;
+}
+.sidebar a.on {
+  color: var(--hotter);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  max-width: 880px;
+  padding: 40px 40px 120px;
+}
+.content.wide {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+@media (max-width: 960px) {
+  .sidebar {
+    display: none;
+  }
+  .content {
+    padding: 28px max(20px, env(safe-area-inset-left, 0px)) 96px;
+  }
+}
+
+/* ── Type ────────────────────────────────────────────────── */
+
+.content h1 {
+  margin: 0 0 12px;
+  font: 800 clamp(40px, 5vw, 64px) / 1 var(--font);
+  letter-spacing: -0.04em;
+  background: linear-gradient(90deg, var(--fg), var(--hotter) 45%, var(--hot) 75%, var(--rose));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
+}
+.lead {
+  margin: 0 0 8px;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  max-width: 40em;
+}
+.content h2 {
+  margin: 64px 0 14px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  font: 700 26px / 1.2 var(--font);
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.content h3 {
+  margin: 30px 0 8px;
+  font: 700 17px / 1.3 var(--font);
+  color: var(--fg);
+}
+.content p {
+  margin: 12px 0;
+  line-height: 1.7;
+  color: var(--fg-2);
+}
+.content strong {
+  color: var(--fg);
+}
+:not(pre) > code {
+  font: 500 0.86em var(--mono);
+  color: var(--hotter);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+a > code {
+  color: inherit;
+}
+
+/* ── Code blocks ─────────────────────────────────────────── */
+
+.block {
+  position: relative;
+  margin: 14px 0;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+.block pre {
+  margin: 0;
+  padding: 16px 20px;
+  padding-right: 80px;
+  font: 500 13.5px/1.75 var(--mono);
+  color: var(--tok-plain);
+  white-space: pre;
+  width: fit-content;
+  min-width: 100%;
+}
+.block .copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--ink-2);
+}
+.tok-key { color: var(--rose); }
+.tok-num { color: var(--hot); }
+.tok-com { color: var(--fg-3); }
+
+/* ── Tables ──────────────────────────────────────────────── */
+
+.table {
+  margin: 18px 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.6;
+}
+th,
+td {
+  padding: 10px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg-2);
+}
+tr:last-child > * {
+  border-bottom: 0;
+}
+th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-3);
+  background: rgba(255, 255, 255, 0.02);
+}
+td:first-child {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  td:first-child {
+    white-space: normal;
+  }
+}
+
+/* ── Install page ────────────────────────────────────────── */
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.facts li {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.steps {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  counter-reset: step;
+}
+.step {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 4px 18px;
+  padding: 22px 24px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 60%), var(--ink-2);
+  counter-increment: step;
+}
+.step::before {
+  content: counter(step);
+  grid-row: span 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 800 18px var(--font);
+  color: #1a0610;
+  background: var(--raised);
+  box-shadow: var(--raised-shadow);
+}
+.step h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 20px;
+  align-self: center;
+}
+.step p {
+  margin: 4px 0;
+}
+.step .block {
+  margin: 10px 0 4px;
+}
+@media (max-width: 560px) {
+  .step {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .step::before {
+    grid-row: auto;
+  }
+}
+
+.extras {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.extra {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px 22px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+}
+.extra h3 {
+  margin: 0;
+}
+.extra p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  flex: 1;
+}
+.extra .block {
+  margin: 0;
+}
+.extra .block pre {
+  padding: 12px 16px;
+  padding-right: 72px;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  width: auto;
+}

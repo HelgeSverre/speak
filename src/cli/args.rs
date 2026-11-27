@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone, Default)]
 #[command(
     name = "speak",
     about = "Offline text-to-speech with the command-line surface of macOS say",
@@ -113,7 +113,7 @@ pub struct Args {
     #[arg(long, value_name = "bpm")]
     pub tempo: Option<f32>,
 
-    /// Transpose the tune by semitones (it is fitted to the voice first)
+    /// Transpose the tune by semitones (it is first moved by whole octaves into the voice's range)
     #[arg(long, value_name = "semitones", allow_hyphen_values = true)]
     pub key: Option<f32>,
 
@@ -152,6 +152,12 @@ pub struct Args {
     /// Debug log on stderr
     #[arg(short = 'V', long)]
     pub verbose: bool,
+
+    /// Serve the Model Context Protocol on stdin/stdout so coding agents can speak.
+    /// Defaults come from the config file and SPEAK_VOICE / SPEAK_BACKEND
+    #[cfg(feature = "mcp")]
+    #[arg(long, exclusive = true)]
+    pub mcp: bool,
 
     /// Print the version
     #[arg(long, action = clap::ArgAction::Version)]

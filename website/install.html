@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Install · speak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Install speak with Homebrew, then add the CMU dictionary, the diphone voice, the MCP server for agents and a SidePulse strip.">
+<meta name="theme-color" content="#000004">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body class="page">
+<header class="top">
+  <a class="mark" href="./"><img src="logo.svg" alt="" width="20" height="20">speak</a>
+  <nav>
+    <a href="./">Try it</a>
+    <a href="voices.html">Voices</a>
+    <a href="docs.html">Docs</a>
+    <a href="install.html" aria-current="page">Install</a>
+    <a href="https://github.com/HelgeSverre/speak">GitHub</a>
+  </nav>
+</header>
+<main class="content wide">
+  <h1>Install</h1>
+  <p class="lead">One command gives you <code>speak</code> and <code>speak-lab</code>. No data files to download, no model to fetch.</p>
+  <ul class="facts">
+    <li>macOS, Apple Silicon and Intel</li>
+    <li>Linux, arm64 and x86_64</li>
+    <li>3.9 MB binary</li>
+  </ul>
+
+  <ol class="steps">
+    <li class="step">
+      <h2>Install with Homebrew</h2>
+      <p>From the <a href="https://github.com/HelgeSverre/homebrew-tap">helgesverre/tap</a> tap. Works the same with Homebrew on Linux.</p>
+      <div class="block"><button class="copy" data-copy="#i-brew">Copy</button><pre id="i-brew" data-lang="sh"><code>brew install helgesverre/tap/speak</code></pre></div>
+    </li>
+    <li class="step">
+      <h2>Say something</h2>
+      <p>The flags are those of macOS <code>say</code>. <a href="docs.html">Docs</a> has the rest.</p>
+      <div class="block"><button class="copy" data-copy="#i-try">Copy</button><pre id="i-try" data-lang="sh"><code>speak "Hello world."
+speak -v '?'
+speak -v klatt-pip --sing=twinkle</code></pre></div>
+    </li>
+  </ol>
+
+  <h2>Other ways</h2>
+  <h3>Install script</h3>
+  <p>Downloads the binaries for your platform from the latest release into <code>~/.cargo/bin</code>.</p>
+  <div class="block"><button class="copy" data-copy="#i-sh">Copy</button><pre id="i-sh" data-lang="sh"><code>curl --proto '=https' --tlsv1.2 -LsSf https://github.com/HelgeSverre/speak/releases/latest/download/speak-installer.sh | sh</code></pre></div>
+  <h3>From source</h3>
+  <p>Needs Rust; the repository pins 1.99 and <code>rustup</code> fetches it on the first build. On Linux, install <code>libasound2-dev</code> first.</p>
+  <div class="block"><button class="copy" data-copy="#i-build">Copy</button><pre id="i-build" data-lang="sh"><code>git clone https://github.com/HelgeSverre/speak
+cd speak
+cargo install --path .</code></pre></div>
+
+  <h2>Extras</h2>
+  <p>All optional. <code>speak</code> works without any of them.</p>
+  <div class="extras">
+    <section class="extra">
+      <h3>Pronunciation dictionary</h3>
+      <p>The CMU Pronouncing Dictionary, 126,000 words, fetched at a pinned revision and checksum-verified. Without it, words outside the built-in lexicon go through the letter-to-sound tree.</p>
+      <div class="block"><button class="copy" data-copy="#x-lex">Copy</button><pre id="x-lex" data-lang="sh"><code>speak-lab lexicon build &quot;$(curl -fsSL https://raw.githubusercontent.com/HelgeSverre/speak/main/scripts/fetch-cmudict.sh | sh | tail -1)&quot;</code></pre></div>
+    </section>
+    <section class="extra">
+      <h3>Diphone voice</h3>
+      <p>The second backend: 2,013 diphones analysed from the formant synthesizer, built in about 12 seconds.</p>
+      <div class="block"><button class="copy" data-copy="#x-voice">Copy</button><pre id="x-voice" data-lang="sh"><code>speak-lab diphones build --bootstrap
+speak -b diphone "Hello."</code></pre></div>
+    </section>
+    <section class="extra">
+      <h3>Coding agents</h3>
+      <p>An MCP server on stdio with <code>speak</code> and <code>list_voices</code> tools, so an agent can talk to you.</p>
+      <div class="block"><button class="copy" data-copy="#x-mcp">Copy</button><pre id="x-mcp" data-lang="sh"><code>claude mcp add --scope user speak -- speak --mcp</code></pre></div>
+    </section>
+    <section class="extra">
+      <h3>SidePulse strip</h3>
+      <p>Plug in a <a href="https://sidepulse.io/pro">SidePulse Pro</a> and <code>speak</code> shows a mouth on its eight LEDs while it talks. Nothing to configure.</p>
+      <div class="block"><button class="copy" data-copy="#x-pulse">Copy</button><pre id="x-pulse" data-lang="sh"><code>speak --no-lights "Not now."</code></pre></div>
+    </section>
+    <section class="extra">
+      <h3>Defaults</h3>
+      <p>Voice, rate and named voices in a config file. See <a href="docs.html#files">Files</a>.</p>
+      <div class="block"><button class="copy" data-copy="#x-cfg">Copy</button><pre id="x-cfg" data-lang="toml"><code>rate = 190
+
+[klatt]
+voice = "klatt-female"</code></pre></div>
+    </section>
+    <section class="extra">
+      <h3>This website</h3>
+      <p>Builds the engine to WebAssembly with wasm-pack and serves it locally.</p>
+      <div class="block"><button class="copy" data-copy="#x-site">Copy</button><pre id="x-site" data-lang="sh"><code>just site</code></pre></div>
+    </section>
+  </div>
+
+  <h2>Uninstall</h2>
+  <p>Removes both binaries. Voices and the dictionary live in <code>~/Library/Application Support/speak</code> on macOS, config in <code>~/.config/speak</code>.</p>
+  <div class="block"><button class="copy" data-copy="#u-cmd">Copy</button><pre id="u-cmd" data-lang="sh"><code>brew uninstall speak</code></pre></div>
+  <p>Installed with the script or from source: <code>cargo uninstall speak</code>.</p>
+</main>
+<script type="module">
+  import { decorate } from "./engine.js";
+  decorate();
+</script>
+</body>
+</html>

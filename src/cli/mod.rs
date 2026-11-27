@@ -7,6 +7,8 @@ pub mod interactive;
 pub mod lab;
 pub mod lights;
 pub mod listing;
+#[cfg(feature = "mcp")]
+pub mod mcp;
 pub mod pipeline;
 pub mod resynth;
 pub mod wer;

@@ -11,11 +11,15 @@ pub mod timing;
 pub mod traits;
 
 pub mod audio;
+#[cfg(feature = "cli")]
 pub mod cli;
 pub mod diphone;
 pub mod dsp;
 pub mod klatt;
+pub mod sidepulse;
 pub mod text;
+#[cfg(feature = "wasm")]
+pub mod wasm;
 
 pub use chunk::{Chunk, Controls, Item, Segment, Terminator, Unit, Word, WordSource};
 pub use error::{Error, Result};

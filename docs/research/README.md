@@ -29,7 +29,7 @@ Citations are `A §2.1.4` = report A, section 2.1.4.
 | 5 | Latency / streaming | Both backends render far faster than real time and stream 20 ms blocks through a ring buffer. One sentence per chunk. Target: first audio within 100 ms of process start. |
 | 6 | Voices and control | Klatt voice = parameter preset (F0, formant scale, open quotient, tilt, breathiness, source model). Diphone voice = an inventory file we build. Rate, pitch and volume work on both because prosody and excitation are ours. `say`-style `[[...]]` commands; no SSML. |
 | 7 | Quality versus size | Accepted: DECtalk/eSpeak-class speech, zero model files, a few MB of locally built voice data. Neural-quality speech is out of reach by design. Quality is tracked as word error rate against `say`. |
-| 8 | Licensing | Code MIT OR Apache-2.0, all written here. No GPL code read or ported. CMUdict data is BSD-style. No weights to license. Voices we record are ours. |
+| 8 | Licensing | Code MIT, all written here. No GPL code read or ported. CMUdict data is BSD-style. No weights to license. Voices we record are ours. |
 
 ### 1.1 Pipeline shape
 
@@ -92,7 +92,7 @@ The brief asked about Piper, Kokoro, StyleTTS 2, F5-TTS and XTTS. Report B has t
 
 | Item | Licence | Policy |
 |---|---|---|
-| `speak` code | MIT OR Apache-2.0 | written here |
+| `speak` code | MIT | written here |
 | Library crates (clap, cpal, hound, rubato, realfft, serde, …) | MIT / Apache-2.0 / BSD | allowed |
 | CMUdict | BSD-2-Clause-style, © Carnegie Mellon University | optional data; notice reproduced in `NOTICE` |
 | NRL letter-to-sound report (Elovitz et al. 1976) | US government work | reference for rule writing |

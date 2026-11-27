@@ -146,7 +146,8 @@ pub mod style {
     pub const VIBRATO_ST: f32 = 0.45;
     pub const VIBRATO_DELAY_MS: f32 = 200.0;
     pub const VIBRATO_RAMP_MS: f32 = 250.0;
-    /// The tune is moved so its mean sits this far above the speaking pitch.
+    /// The tune is moved by whole octaves so its mean lands nearest this multiple of the
+    /// speaking pitch.
     pub const TESSITURA: f32 = 1.5;
     pub const MIN_VOWEL_MS: f32 = 70.0;
     pub const F0_STEP_MS: f32 = 12.0;
@@ -177,12 +178,14 @@ impl SingProsody {
         }
     }
 
-    /// Semitones that bring the tune into the voice's singing range.
-    fn transpose(&self, base_hz: f32) -> f32 {
+    /// Semitones the written notes are moved by for a voice speaking at `base_hz`: whole
+    /// octaves into its singing range, plus `--key`. Octaves keep the notes' names, and moving
+    /// one note never shifts the others unless the mean crosses half an octave.
+    pub fn transpose(&self, base_hz: f32) -> f32 {
         let pitches: Vec<f32> = self.notes.iter().filter_map(|n| n.midi).collect();
         let mean = pitches.iter().sum::<f32>() / pitches.len().max(1) as f32;
         let target = 69.0 + 12.0 * (base_hz * style::TESSITURA / 440.0).log2();
-        (target - mean).round() + self.key
+        12.0 * ((target - mean) / 12.0).round() + self.key
     }
 }
 
@@ -499,6 +502,19 @@ mod tests {
             .iter()
             .fold((f32::MAX, 0.0f32), |(l, h), v| (l.min(*v), h.max(*v)));
         assert!(hi / lo > 1.02, "no vibrato: {lo}..{hi}");
+    }
+
+    #[test]
+    fn fitting_moves_whole_octaves() {
+        let fit = |m: &str| SingProsody::new(parse_melody(m).unwrap(), 120.0, 0.0).transpose(110.0);
+        // Written around middle C, sung an octave down by a 110 Hz voice.
+        assert_eq!(fit("C4 E4 G4"), -12.0);
+        // Raising one note keeps the rest where they were.
+        assert_eq!(fit("C4 E4 A4"), -12.0);
+        // Already in range: sung as written.
+        assert_eq!(fit("C3 E3 G3"), 0.0);
+        let keyed = SingProsody::new(parse_melody("C3 E3").unwrap(), 120.0, 2.0);
+        assert_eq!(keyed.transpose(110.0), 2.0);
     }
 
     #[test]

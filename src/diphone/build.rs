@@ -173,7 +173,7 @@ pub fn bootstrap(name: &str, mut progress: impl FnMut(usize, usize)) -> Result<V
         progress(i + 1, all.len());
     }
     let description = format!(
-        "name={name}; speaker=klatt-male; source=klatt-male; LPC diphones analysed from klatt-male; licence=MIT OR Apache-2.0"
+        "name={name}; speaker=klatt-male; source=klatt-male; LPC diphones analysed from klatt-male; licence=MIT"
     );
     Ok(VoiceFile::new(description, diphones))
 }

@@ -9,13 +9,13 @@ use std::time::{Duration, Instant};
 
 use crate::audio::format::{self, DataFormat, FileFormat};
 use crate::audio::{FileSink, NullSink, Playback, playback};
-use crate::chunk::{Chunk, Controls, Terminator, Unit, WordSource};
+use crate::chunk::{Chunk, Controls, WordSource};
 use crate::cli::args::Args;
 use crate::cli::config::{self, Config};
 use crate::cli::{backends, lights, listing};
 use crate::error::{Error, Result};
 use crate::pho::{parse_pho, print_pho};
-use crate::phone::{parse_arpabet, print_arpabet};
+use crate::phone::print_arpabet;
 use crate::text::sing::{self, SingProsody};
 use crate::text::{Frontend, RuleProsody};
 use crate::timing::TimingReport;
@@ -26,6 +26,8 @@ use crate::traits::{
 const DUMP_STAGES: &[&str] = &["text", "chunks", "phonemes", "pho", "frames", "units"];
 /// `-P` keys that belong to the frontend rather than a backend.
 const FRONTEND_KEYS: &[&str] = &["lts"];
+/// Silence kept after the last chunk so the final sound rings out instead of clicking off.
+const FINAL_TAIL_MS: f32 = 60.0;
 
 pub fn data_dirs() -> DataDirs {
     let data = std::env::var_os("SPEAK_DATA_DIR")
@@ -180,25 +182,7 @@ fn parse_params(
 }
 
 pub fn parse_pitch(s: &str, controls: &mut Controls) -> Result<()> {
-    let bad = || {
-        Error::usage(format!(
-            "--pitch {s}: expected Hz (110) or semitones (+2st)"
-        ))
-    };
-    if let Some(st) = s.strip_suffix("st") {
-        let v: f32 = st.parse().map_err(|_| bad())?;
-        if !(-24.0..=24.0).contains(&v) {
-            return Err(bad());
-        }
-        controls.pitch_shift_st = v;
-    } else {
-        let v: f32 = s.parse().map_err(|_| bad())?;
-        if !(40.0..=500.0).contains(&v) {
-            return Err(bad());
-        }
-        controls.pitch_base_hz = Some(v);
-    }
-    Ok(())
+    controls.set_pitch(s)
 }
 
 fn controls(args: &Args, cfg: &Config, alias_rate: Option<f32>) -> Result<Controls> {
@@ -256,49 +240,7 @@ fn read_input(args: &Args) -> Result<Input> {
     Ok(Input::Text(s))
 }
 
-/// Chunks from ARPAbet text: one per sentence mark.
-pub fn arpabet_chunks(text: &str, controls: Controls) -> Result<Vec<Chunk>> {
-    let units = parse_arpabet(text)?;
-    let mut chunks = Vec::new();
-    let mut cur: Vec<Unit> = Vec::new();
-    let mut flush = |cur: &mut Vec<Unit>, terminator: Terminator| {
-        while matches!(cur.first(), Some(Unit::WordBreak)) {
-            cur.remove(0);
-        }
-        if cur
-            .iter()
-            .any(|u| matches!(u, Unit::Seg(_) | Unit::Silence { .. }))
-        {
-            chunks.push(Chunk {
-                index: chunks.len(),
-                text: print_arpabet(cur),
-                units: std::mem::take(cur),
-                terminator,
-                pause_after_ms: terminator.pause_ms() / controls.rate,
-                controls,
-                ..Chunk::default()
-            });
-        }
-        cur.clear();
-    };
-    for u in units {
-        let mark = if let Unit::Punct(c) = u {
-            Some(c)
-        } else {
-            None
-        };
-        cur.push(u);
-        if let Some(c @ ('.' | '?' | '!')) = mark {
-            flush(&mut cur, Terminator::from_char(c));
-        }
-    }
-    let last = match cur.last() {
-        Some(Unit::Punct(c)) => Terminator::from_char(*c),
-        _ => Terminator::None,
-    };
-    flush(&mut cur, last);
-    Ok(chunks)
-}
+pub use crate::pho::arpabet_chunks;
 
 fn singer(args: &mut Args) -> Result<Option<SingProsody>> {
     let tune =
@@ -441,7 +383,25 @@ fn output_format(args: &Args) -> Result<Option<Output>> {
     )))
 }
 
+/// SIGINT: stop audio, finalize the output file, exit 130. A second one exits at once.
+fn stop_on_ctrlc() -> Arc<AtomicBool> {
+    let stop = Arc::new(AtomicBool::new(false));
+    let flag = stop.clone();
+    let _ = ctrlc::set_handler(move || {
+        if flag.swap(true, Ordering::SeqCst) {
+            std::process::exit(130);
+        }
+    });
+    stop
+}
+
 pub fn run(args: Args, start: Instant) -> Result<()> {
+    run_until(args, start, None)
+}
+
+/// [`run`], stopped by `stop` instead of SIGINT when it is given. Setting the flag ends the
+/// run with [`Error::Interrupted`] after the current audio block.
+pub fn run_until(args: Args, start: Instant, stop: Option<Arc<AtomicBool>>) -> Result<()> {
     let all = backends();
     let data = data_dirs();
     if early_exit(&args, &all, &data)? {
@@ -484,17 +444,7 @@ pub fn run(args: Args, start: Instant) -> Result<()> {
     let controls = controls(&args, &cfg, resolved.alias_rate)?;
     let output = output_format(&args)?;
     let input = read_input(&args)?;
-
-    // SIGINT: stop audio, finalize the output file, exit 130. A second one exits at once.
-    let stop = Arc::new(AtomicBool::new(false));
-    {
-        let stop = stop.clone();
-        let _ = ctrlc::set_handler(move || {
-            if stop.swap(true, Ordering::SeqCst) {
-                std::process::exit(130);
-            }
-        });
-    }
+    let stop = stop.unwrap_or_else(stop_on_ctrlc);
     let startup_ms = start.elapsed().as_secs_f64() * 1e3;
 
     // Three startup tasks run concurrently: frontend, voice open, audio open.
@@ -576,6 +526,10 @@ pub fn run(args: Args, start: Instant) -> Result<()> {
         }
         let t = Instant::now();
         prosody.apply(&mut chunk, &spec.prosody);
+        // Nothing follows the last chunk: its sentence pause would only delay the exit.
+        if total == Some(n_chunks) {
+            chunk.pause_after_ms = chunk.pause_after_ms.min(FINAL_TAIL_MS);
+        }
         if let Some(stage) = args.dump.as_deref() {
             let mut out = stdout.lock();
             match stage {
@@ -746,15 +700,7 @@ fn run_resynth(args: &Args, cfg: &Config, start: Instant) -> Result<()> {
     }
     let vocoder = args.vocoder.as_deref().unwrap_or("lpc");
     let output = output_format(args)?;
-    let stop = Arc::new(AtomicBool::new(false));
-    {
-        let stop = stop.clone();
-        let _ = ctrlc::set_handler(move || {
-            if stop.swap(true, Ordering::SeqCst) {
-                std::process::exit(130);
-            }
-        });
-    }
+    let stop = stop_on_ctrlc();
     let pcm = resynth::load(path)?;
     let mut sink: Box<dyn AudioSink> = match output {
         Some((p, file_format, data_format, channels)) => Box::new(

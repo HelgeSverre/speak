@@ -108,18 +108,29 @@ Scrolling spectrogram and waveform, with sound: [hello](demo/hello.mp4) · [Dais
 ## Install
 
 ```sh
+brew install helgesverre/tap/speak
+```
+
+macOS (Apple Silicon and Intel) and Linux (arm64, x86_64). Without Homebrew:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/HelgeSverre/speak/releases/latest/download/speak-installer.sh | sh
+```
+
+From source, with Rust 1.99 (Linux also needs `libasound2-dev`):
+
+```sh
 git clone https://github.com/HelgeSverre/speak && cd speak
 cargo install --path .
 ```
 
-Optional: a 126,000-word pronunciation lexicon (CMUdict, BSD-style licence). Without it `speak` pronounces every word by rule; with it, common words are looked up.
+With [`just`](https://github.com/casey/just) in a checkout: `just install`, `just test`, `just check`, `just lexicon`, `just voice`; `just` lists the rest.
+
+Optional: a 126,000-word pronunciation lexicon (CMUdict, BSD-style licence). Without it `speak` pronounces every word outside its built-in lexicon by rule; with it, common words are looked up.
 
 ```sh
-scripts/fetch-cmudict.sh                       # pinned revision, checksum verified
-speak-lab lexicon build "$HOME/Library/Application Support/speak/lexicon/cmudict.dict"
+speak-lab lexicon build "$(curl -fsSL https://raw.githubusercontent.com/HelgeSverre/speak/main/scripts/fetch-cmudict.sh | sh | tail -1)"
 ```
-
-Needs Rust 1.99. Works on macOS (Apple Silicon is the primary target). Linux needs ALSA headers (`libasound2-dev`) and is not yet verified.
 
 ## How it works
 
@@ -199,9 +210,31 @@ Plus what `say` does not have:
 
 Ctrl-C stops the audio at once and still leaves a valid output file.
 
-## Bonus: it has a mouth
+## Use from coding agents
 
-If a [SidePulse](https://sidepulse.io/pro) LED strip is plugged in, `speak` drives it in sync with the audio: one pulse per syllable, wide and warm for open vowels like "father", narrow and cool for closed ones like "see", brighter on stressed syllables. The previous LED state is restored afterwards. `--no-lights` turns it off.
+`speak --mcp` runs an MCP server on stdio with two tools, `speak` and `list_voices`.
+
+```sh
+claude mcp add --scope user speak -- speak --mcp
+```
+
+```json
+{ "mcpServers": { "speak": { "command": "speak", "args": ["--mcp"] } } }
+```
+
+Calls queue in order; cancelling a request stops its audio. `SPEAK_VOICE` in the server's environment sets the default voice.
+
+## In the browser
+
+The formant synthesizer compiles to WebAssembly (1.9 MB). `website/` is a site that runs it: type, see the spectrogram, hear it, and copy the matching `speak` command.
+
+```sh
+just site      # builds website/pkg with wasm-pack and serves http://localhost:8000
+```
+
+## SidePulse
+
+If a [SidePulse](https://sidepulse.io/pro) LED strip is mounted, `speak` shows a mouth on its eight LEDs in sync with the audio: it opens from the centre on each syllable, wide and warm for open vowels like "father", narrow and cool for closed ones like "see", and goes dark when the lips close. The previous LED state is restored afterwards. Without a strip nothing changes. `--no-lights`, `lights = false` in the config, or `SPEAK_LIGHTS=0` turn it off.
 
 ## Numbers
 
@@ -218,7 +251,7 @@ Measured on an Apple M2 Max.
 | Intelligibility (word error rate, 20 sentences, transcribed by Whisper) | formant 18.0 % · diphone 27.3 % · diphone from simulated recordings 25.1 % · macOS `say` 3.3 % |
 | Letter-to-sound phoneme error on a 588-word list | trained tree 2.0 % · hand rules 5.7 % |
 | Letter-to-sound on 11,563 held-out CMUdict words | 52.1 % of words fully correct, stress included |
-| Tests | 178 |
+| Tests | 180 |
 
 The intelligibility gap is real and expected: this is DECtalk-class speech, not neural speech. It started at 24 %; context-dependent consonant rules brought it to 18 %.
 
@@ -249,4 +282,4 @@ Not done:
 
 ## Licence
 
-MIT OR Apache-2.0, at your option ([LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE)). The letter-to-sound tree in `data/` is derived from the CMU Pronouncing Dictionary; see [NOTICE](NOTICE).
+MIT ([LICENSE](LICENSE)). The letter-to-sound tree in `data/` is derived from the CMU Pronouncing Dictionary; see [NOTICE](NOTICE).

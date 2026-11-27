@@ -1,8 +1,10 @@
-//! SidePulse mouth: an 8-LED strip that follows the voice.
+//! SidePulse strip: the mouth of `crate::sidepulse`, played in step with the audio.
 //!
 //! The device mounts as a small drive; writing an animation program to `LEDS.LED` changes the
-//! lights (≤ 512 bytes, ≤ 20 lines). Each syllable becomes one pulse: the mouth opens from the
-//! centre by the vowel's openness (F1), the hue follows F2, the brightness follows stress.
+//! lights (≤ 512 bytes, ≤ 20 lines). The strip is a mouth seen from the front: on each syllable
+//! it opens from the centre by the vowel's openness (F1), then closes to a dim slit, or goes dark
+//! when the lips shut or the voice pauses. The colour runs from a centre hue set by F2 to warmer
+//! lips, and the brightness follows stress.
 //! Programs are written in step with the playback clock, a second or so of speech at a time.
 
 use std::io::Write;
@@ -13,11 +15,8 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use crate::chunk::{Chunk, Unit};
-use crate::klatt::tables::row;
-use crate::phone::Stress;
-
-const LEDS: usize = 8;
+use crate::chunk::Chunk;
+use crate::sidepulse::{DARK, Key, Shape, Syllable, keyframes, syllables};
 const MAX_BYTES: usize = 480;
 const MAX_LINES: usize = 18;
 /// Time a write takes to reach the LEDs (measured 4–9 ms).
@@ -35,6 +34,8 @@ struct Batch {
 pub struct Lights {
     tx: Option<Sender<Batch>>,
     worker: Option<JoinHandle<()>>,
+    /// Set once the audio has finished: the clock no longer advances, so nothing waits on it.
+    ended: Arc<AtomicBool>,
 }
 
 /// The mounted device, unless disabled with `SPEAK_LIGHTS=0`. `SPEAK_LIGHTS=/path` overrides.
@@ -66,141 +67,76 @@ fn write_program(file: &Path, program: &str) -> std::io::Result<()> {
     f.sync_all()
 }
 
-fn hsv(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-    let h = h.rem_euclid(360.0) / 60.0;
-    let c = v * s;
-    let x = c * (1.0 - (h % 2.0 - 1.0).abs());
-    let (r, g, b) = match h as u32 {
-        0 => (c, x, 0.0),
-        1 => (x, c, 0.0),
-        2 => (0.0, c, x),
-        3 => (0.0, x, c),
-        4 => (x, 0.0, c),
-        _ => (c, 0.0, x),
-    };
-    let m = v - c;
-    let f = |u: f32| ((u + m) * 255.0).round().clamp(0.0, 255.0) as u8;
-    (f(r), f(g), f(b))
-}
-
-/// One syllable: when, how long, and what the mouth looks like.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Syllable {
-    pub start_ms: f32,
-    pub dur_ms: f32,
-    /// LEDs lit, centred: 2, 4, 6 or 8.
-    pub width: usize,
-    pub rgb: (u8, u8, u8),
-}
-
-/// Syllables of a timed chunk; times are relative to the chunk start.
-pub fn syllables(chunk: &Chunk) -> Vec<Syllable> {
-    let mut out = Vec::new();
-    let mut t = 0.0f32;
-    for u in &chunk.units {
-        if let Unit::Seg(s) = u
-            && s.phone.is_vowel()
-            && s.dur_ms > 0.0
-        {
-            let r = row(s.phone);
-            let (f1, f2) = (0.5 * (r.f[0].0 + r.f[0].1), 0.5 * (r.f[1].0 + r.f[1].1));
-            let open = ((f1 - 280.0) / (700.0 - 280.0)).clamp(0.0, 1.0);
-            let width = 2 + 2 * (open * 3.0).round() as usize;
-            // Back vowels are warm, front vowels are cool.
-            let hue = 15.0 + ((f2 - 900.0) / (2100.0 - 900.0)).clamp(0.0, 1.0) * 195.0;
-            let value = match s.stress {
-                Stress::Primary => 1.0,
-                Stress::Secondary => 0.7,
-                Stress::None => 0.4,
-            };
-            out.push(Syllable {
-                start_ms: t,
-                dur_ms: s.dur_ms,
-                width: width.min(LEDS),
-                rgb: hsv(hue, 0.95, value),
-            });
-        }
-        t += u.dur_ms();
-    }
-    out
-}
-
-fn line(s: &Syllable, dur_ms: f32) -> String {
-    let (r, g, b) = s.rgb;
-    let color = format!("#{r:02x}{g:02x}{b:02x}");
-    let dark = (LEDS - s.width) / 2;
+/// A transition to `shape` over `ms`, as one program line.
+fn line(shape: &Shape, ms: u32) -> String {
     let mut out = String::new();
-    for i in 0..LEDS {
-        out.push_str(if i < dark || i >= LEDS - dark {
-            "off"
-        } else {
-            &color
-        });
-        out.push(' ');
+    for &(r, g, b) in shape {
+        out.push_str(&format!("#{r:02x}{g:02x}{b:02x} "));
     }
-    out.push_str(&format!("{}ms pulse\n", dur_ms.round().max(17.0) as u32));
+    out.push_str(&format!("{}ms cosine\n", ms.max(17)));
     out
 }
 
-/// Programs covering `syls` (absolute times in ms), each within the device's size limits.
-fn batches(syls: &[Syllable]) -> Vec<Batch> {
+/// Programs playing `keys`, each within the device's size limits. A long hold ends a program;
+/// the next one is written when its first key comes up.
+fn batches(keys: &[Key]) -> Vec<Batch> {
     let mut out: Vec<Batch> = Vec::new();
-    let mut cur = String::new();
-    let (mut lines, mut start, mut cursor) = (0usize, 0.0f32, 0.0f32);
-    let flush = |cur: &mut String, start: f32, end: f32, out: &mut Vec<Batch>| {
-        if !cur.is_empty() {
-            out.push(Batch {
-                at_s: start as f64 / 1000.0,
-                end_s: end as f64 / 1000.0,
-                program: std::mem::take(cur),
-            });
+    let mut cur = String::from("off\n");
+    let (mut lines, mut start, mut end) = (1usize, keys.first().map_or(0, |k| k.ms), 0u32);
+    for w in keys.windows(2) {
+        let (from, to) = (&w[0], &w[1]);
+        let ms = to.ms - from.ms;
+        let text = if to.shape != from.shape {
+            line(&to.shape, ms)
+        } else if ms > 600 {
+            // A pause: end this program and start the next one at the following key.
+            flush(&mut cur, start, end, &mut out);
+            (lines, start) = (0, to.ms);
+            continue;
+        } else if to.shape == DARK {
+            format!("off {ms}ms none\n")
+        } else {
+            line(&to.shape, ms)
+        };
+        if cur.len() + text.len() > MAX_BYTES || lines + 1 > MAX_LINES {
+            flush(&mut cur, start, end, &mut out);
+            (lines, start) = (0, from.ms);
         }
-    };
-    for (i, s) in syls.iter().enumerate() {
-        // The pulse leads the vowel a little and runs to the next syllable or 60 ms past the vowel.
-        let begin = (s.start_ms - 30.0).max(cursor);
-        let natural_end = s.start_ms + s.dur_ms + 60.0;
-        let end = syls
-            .get(i + 1)
-            .map(|n| (n.start_ms - 30.0).min(natural_end))
-            .unwrap_or(natural_end)
-            .max(begin + 30.0);
-        let gap = begin - cursor;
-        let mut text = String::new();
-        if !cur.is_empty() && gap >= 50.0 {
-            text.push_str(&format!("off {}ms none\n", gap.round() as u32));
-        }
-        text.push_str(&line(s, end - begin));
-        let new_lines = text.lines().count();
-        if cur.is_empty()
-            || cur.len() + text.len() > MAX_BYTES
-            || lines + new_lines > MAX_LINES
-            || gap > 600.0
-        {
-            flush(&mut cur, start, cursor, &mut out);
-            // A program starts dark so pulses return to dark.
-            cur.push_str("off\n");
-            lines = 1;
-            start = begin;
-            text = line(s, end - begin);
-        }
-        lines += text.lines().count();
         cur.push_str(&text);
-        cursor = end;
+        lines += 1;
+        end = to.ms;
     }
-    flush(&mut cur, start, cursor, &mut out);
+    flush(&mut cur, start, end, &mut out);
     out
 }
 
-fn run(file: PathBuf, clock: Clock, stop: Arc<AtomicBool>, rx: Receiver<Batch>) {
+fn flush(cur: &mut String, start: u32, end: u32, out: &mut Vec<Batch>) {
+    if !cur.is_empty() && end > start {
+        out.push(Batch {
+            at_s: start as f64 / 1000.0,
+            end_s: end as f64 / 1000.0,
+            program: std::mem::take(cur),
+        });
+    }
+    cur.clear();
+}
+
+fn run(
+    file: PathBuf,
+    clock: Clock,
+    stop: Arc<AtomicBool>,
+    ended: Arc<AtomicBool>,
+    rx: Receiver<Batch>,
+) {
     // Borrow the LEDs: whatever was showing comes back afterwards.
     let saved = std::fs::read_to_string(&file).ok();
+    let done = || stop.load(Ordering::Relaxed) || ended.load(Ordering::Relaxed);
     let mut end_s = 0.0f64;
     for batch in rx {
-        while clock() + LEAD_S < batch.at_s && !stop.load(Ordering::Relaxed) {
+        while clock() + LEAD_S < batch.at_s && !done() {
             std::thread::sleep(Duration::from_millis(2));
         }
-        if stop.load(Ordering::Relaxed) {
+        if done() {
             break;
         }
         // Late by more than the batch itself (a stall): skip it.
@@ -209,8 +145,7 @@ fn run(file: PathBuf, clock: Clock, stop: Arc<AtomicBool>, rx: Receiver<Batch>) 
         }
         end_s = batch.end_s;
     }
-    let deadline = std::time::Instant::now() + Duration::from_secs(3);
-    while clock() < end_s && !stop.load(Ordering::Relaxed) && std::time::Instant::now() < deadline {
+    while clock() < end_s && !done() {
         std::thread::sleep(Duration::from_millis(5));
     }
     let _ = write_program(&file, saved.as_deref().unwrap_or("off\n"));
@@ -219,10 +154,15 @@ fn run(file: PathBuf, clock: Clock, stop: Arc<AtomicBool>, rx: Receiver<Batch>) 
 impl Lights {
     pub fn start(file: PathBuf, clock: Clock, stop: Arc<AtomicBool>) -> Lights {
         let (tx, rx) = channel();
-        let worker = std::thread::spawn(move || run(file, clock, stop, rx));
+        let ended = Arc::new(AtomicBool::new(false));
+        let worker = {
+            let ended = ended.clone();
+            std::thread::spawn(move || run(file, clock, stop, ended, rx))
+        };
         Lights {
             tx: Some(tx),
             worker: Some(worker),
+            ended,
         }
     }
 
@@ -237,14 +177,15 @@ impl Lights {
             })
             .collect();
         if let Some(tx) = &self.tx {
-            for b in batches(&syls) {
+            for b in batches(&keyframes(&syls)) {
                 let _ = tx.send(b);
             }
         }
     }
 
-    /// Waits for the last program to play out and restores the previous LED state.
+    /// Call once the audio has finished playing: restores the previous LED state.
     pub fn finish(mut self) {
+        self.ended.store(true, Ordering::Relaxed);
         self.tx.take();
         if let Some(w) = self.worker.take() {
             let _ = w.join();
@@ -257,6 +198,7 @@ mod tests {
     use super::*;
     use crate::chunk::Terminator;
     use crate::phone::parse_arpabet;
+    use crate::sidepulse::{LEDS, Rgb, mouth};
     use crate::text::RuleProsody;
     use crate::traits::{Prosody, ProsodyParams};
 
@@ -271,21 +213,48 @@ mod tests {
     }
 
     #[test]
-    fn one_pulse_per_syllable_and_open_vowels_are_wide() {
+    fn one_shape_per_syllable_and_open_vowels_are_wide() {
         let c = timed("B AA1 B / B IY1 B / B AX B .");
         let s = syllables(&c);
         assert_eq!(s.len(), 3);
-        assert!(s[0].width > s[1].width, "AA is more open than IY");
         assert!(s[0].start_ms < s[1].start_ms && s[1].start_ms < s[2].start_ms);
+        assert!(s.iter().all(|x| x.lips_shut), "B closes the lips");
+        let lit = |x: &Syllable| {
+            mouth(x.open, x.hue, x.level)
+                .iter()
+                .filter(|c| **c != (0, 0, 0))
+                .count()
+        };
+        assert!(lit(&s[0]) > lit(&s[1]), "AA is more open than IY");
         // Stressed syllables are brighter.
-        let lum = |x: &Syllable| x.rgb.0 as u32 + x.rgb.1 as u32 + x.rgb.2 as u32;
+        let lum = |x: &Syllable| -> u32 {
+            mouth(x.open, x.hue, x.level)
+                .iter()
+                .map(|c| c.0 as u32 + c.1 as u32 + c.2 as u32)
+                .sum()
+        };
         assert!(lum(&s[0]) > lum(&s[2]));
     }
 
     #[test]
-    fn programs_respect_the_device_limits() {
+    fn the_mouth_is_symmetric_with_a_gradient() {
+        let m = mouth(1.0, 200.0, 1.0);
+        assert!(
+            m.iter().all(|c| *c != (0, 0, 0)),
+            "fully open lights every LED"
+        );
+        let lum = |c: Rgb| c.0 as u32 + c.1 as u32 + c.2 as u32;
+        for i in 0..LEDS / 2 {
+            assert_eq!(m[i], m[LEDS - 1 - i]);
+        }
+        assert!(lum(m[3]) > lum(m[0]), "lips are dimmer than the middle");
+        assert_ne!(m[3], m[0], "colour changes towards the lips");
+    }
+
+    #[test]
+    fn programs_respect_the_device_limits_and_syntax() {
         let c = timed(&"DH AX / K W IH1 K / B R AW1 N / F AA1 K S / JH AH1 M P S / OW1 V AXR / DH AX / L EY1 Z IY0 / D AO1 G , ".repeat(4));
-        let bs = batches(&syllables(&c));
+        let bs = batches(&keyframes(&syllables(&c)));
         assert!(bs.len() >= 4);
         let mut last = -1.0;
         for b in &bs {
@@ -293,8 +262,19 @@ mod tests {
             assert!(b.program.lines().count() <= 20);
             assert!(b.at_s > last && b.end_s > b.at_s);
             last = b.at_s;
-            for l in b.program.lines().skip(1) {
-                assert!(l.ends_with("ms pulse") || l.ends_with("ms none"), "{l}");
+            for l in b.program.lines() {
+                let t: Vec<&str> = l.split(' ').collect();
+                let ok = match t.as_slice() {
+                    ["off"] => true,
+                    ["off", ms, "none"] => ms.ends_with("ms"),
+                    _ => {
+                        t.len() == LEDS + 2
+                            && t[..LEDS].iter().all(|c| c.len() == 7 && c.starts_with('#'))
+                            && t[LEDS].ends_with("ms")
+                            && t[LEDS + 1] == "cosine"
+                    }
+                };
+                assert!(ok, "not a valid program line: {l}");
             }
         }
     }
@@ -311,7 +291,7 @@ mod tests {
         lights.chunk(&timed("HH AX L OW1 ."), 0.05);
         std::thread::sleep(Duration::from_millis(150));
         let during = std::fs::read_to_string(&file).unwrap();
-        assert!(during.contains("pulse"), "{during}");
+        assert!(during.contains("cosine"), "{during}");
         lights.finish();
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "#00ff00\n");
         let _ = std::fs::remove_dir_all(&dir);

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Docs · speak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="speak reference: options, voice parameters, embedded commands, files, the pipeline and the MCP server.">
+<meta name="theme-color" content="#000004">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body class="page">
+<header class="top">
+  <a class="mark" href="./"><img src="logo.svg" alt="" width="20" height="20">speak</a>
+  <nav>
+    <a href="./">Try it</a>
+    <a href="voices.html">Voices</a>
+    <a href="docs.html" aria-current="page">Docs</a>
+    <a href="install.html">Install</a>
+    <a href="https://github.com/HelgeSverre/speak">GitHub</a>
+  </nav>
+</header>
+<main class="layout">
+  <aside class="sidebar" aria-label="On this page">
+    <h2>Start</h2>
+    <ul>
+      <li><a href="install.html">Install</a></li>
+      <li><a href="#usage">Usage</a></li>
+    </ul>
+    <h2>Reference</h2>
+    <ul>
+      <li><a href="#options">Options</a></li>
+      <li><a href="#params">Voice parameters</a></li>
+      <li><a href="#commands">Embedded commands</a></li>
+      <li><a href="#files">Files</a></li>
+      <li><a href="#pipeline">Pipeline</a></li>
+    </ul>
+    <h2>More</h2>
+    <ul>
+      <li><a href="#agents">Agents (MCP)</a></li>
+      <li><a href="#lab">speak-lab</a></li>
+      <li><a href="#sidepulse">SidePulse</a></li>
+      <li><a href="#browser">Browser build</a></li>
+      <li><a href="#numbers">Numbers</a></li>
+    </ul>
+  </aside>
+
+  <div class="content">
+    <h1>speak</h1>
+    <p class="lead">Offline text-to-speech by formant synthesis, written in Rust. It takes the same flags as macOS <code>say</code>.</p>
+
+    <p>New here? Start with <a href="install.html">Install</a>.</p>
+
+    <h2 id="usage">Usage</h2>
+    <div class="block"><button class="copy" data-copy="#c-usage">Copy</button><pre id="c-usage" data-lang="sh"><code>speak "Hello world."
+speak -v klatt-drama -r 150 "To deploy, or not to deploy?"
+echo 'Dr. Smith paid $3.50 on 12/03/2024 at 5pm.' | speak -o receipt.wav
+speak -f chapter.txt --progress</code></pre></div>
+    <p>Text comes from arguments, <code>-f file</code> or standard input. Ctrl-C stops at once and still leaves a valid output file.</p>
+
+    <h2 id="options">Options</h2>
+    <h3>From <code>say</code></h3>
+    <div class="table"><table>
+      <thead><tr><th>Option</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>-v voice</code></td><td>Voice name, <code>backend:voice</code> or a config alias. <code>-v '?'</code> lists voices.</td></tr>
+        <tr><td><code>-r wpm</code></td><td>Words per minute, 80 to 500. Default 175.</td></tr>
+        <tr><td><code>-o file</code></td><td>Write audio instead of playing. The extension picks the format: <code>.wav</code>, <code>.aiff</code>, <code>.raw</code>. Default AIFF. <code>-</code> is stdout.</td></tr>
+        <tr><td><code>--file-format=fmt</code></td><td><code>WAVE</code>, <code>AIFF</code> or <code>raw</code>.</td></tr>
+        <tr><td><code>--data-format=fmt</code></td><td><code>[BE|LE][I|F][16|24|32][@rate]</code>, for example <code>LEF32@48000</code>. Default 16-bit at 16000 Hz.</td></tr>
+        <tr><td><code>--channels n</code></td><td>1 or 2.</td></tr>
+        <tr><td><code>-a device</code></td><td>Output device by name or index. <code>-a '?'</code> lists devices.</td></tr>
+        <tr><td><code>-f file</code></td><td>Read text from a file. <code>-</code> is stdin.</td></tr>
+        <tr><td><code>--progress</code></td><td>Progress on stderr.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Added</h3>
+    <div class="table"><table>
+      <thead><tr><th>Option</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--pitch value</code></td><td>Base pitch in Hz (<code>140</code>) or a shift in semitones (<code>+3st</code>).</td></tr>
+        <tr><td><code>--volume x</code></td><td>Gain, 0.0 to 2.0.</td></tr>
+        <tr><td><code>-P key=value</code></td><td>Voice parameter. Repeatable. See <a href="#params">Voice parameters</a>.</td></tr>
+        <tr><td><code>--phonemes[=fmt]</code></td><td>Input is ARPAbet (default) or <code>pho</code> instead of text.</td></tr>
+        <tr><td><code>--dump stage</code></td><td>Print <code>text</code>, <code>chunks</code>, <code>phonemes</code>, <code>pho</code>, <code>frames</code> or <code>units</code> and exit.</td></tr>
+        <tr><td><code>--sing[=tune]</code></td><td>Sing to <code>daisy</code>, <code>twinkle</code> or <code>ode</code>.</td></tr>
+        <tr><td><code>--melody notes</code></td><td>Sing to these notes: <code>"C4 D4:2 F#3:0.5 R"</code>. <code>@file</code> reads a file.</td></tr>
+        <tr><td><code>--tempo bpm</code></td><td>Tempo for singing.</td></tr>
+        <tr><td><code>--key st</code></td><td>Transpose the tune. A melody is first moved by whole octaves into the voice's range.</td></tr>
+        <tr><td><code>-b backend</code></td><td><code>klatt</code> (default) or <code>diphone</code>. <code>--list-backends</code> lists them.</td></tr>
+        <tr><td><code>--resynth file.wav</code></td><td>Analyse a recording and resynthesize it. <code>-r</code> and <code>--pitch</code> change it.</td></tr>
+        <tr><td><code>--vocoder name</code></td><td><code>lpc</code>, <code>psola</code> or <code>griffinlim</code>, with <code>--resynth</code>.</td></tr>
+        <tr><td><code>-i</code></td><td>Print the text and highlight each word as it is spoken.</td></tr>
+        <tr><td><code>--timing[=json]</code></td><td>Per-stage timing on stderr.</td></tr>
+        <tr><td><code>--bench[=N]</code></td><td>Time to first audio and real-time factor over N runs.</td></tr>
+        <tr><td><code>--no-stream</code></td><td>Synthesize everything before playing.</td></tr>
+        <tr><td><code>--no-lights</code></td><td>Leave a SidePulse strip alone.</td></tr>
+        <tr><td><code>--mcp</code></td><td>Run as an MCP server on stdio. See <a href="#agents">Agents</a>.</td></tr>
+        <tr><td><code>--config path</code></td><td>Use another config file.</td></tr>
+        <tr><td><code>-V</code></td><td>Debug log on stderr.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="params">Voice parameters</h2>
+    <p>Pass with <code>-P key=value</code>, or as <code>params</code> in a config alias. Out-of-range values are rejected.</p>
+    <div class="table"><table>
+      <thead><tr><th>Key</th><th>Range</th><th>Description</th></tr></thead>
+      <tbody id="param-rows"></tbody>
+    </table></div>
+    <p>Diphone backend: <code>excitation=glottal|pulse|residual</code>. Both backends: <code>lts=cart|rules</code> picks the letter-to-sound method.</p>
+
+    <h2 id="commands">Embedded commands</h2>
+    <p>Written inside the text, as in <code>say</code>.</p>
+    <div class="table"><table>
+      <thead><tr><th>Command</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>[[slnc 500]]</code></td><td>Silence in milliseconds</td></tr>
+        <tr><td><code>[[rate 300]]</code></td><td>Words per minute from here on</td></tr>
+        <tr><td><code>[[volm 0.5]]</code></td><td>Volume from here on</td></tr>
+        <tr><td><code>[[pbas 140]]</code></td><td>Base pitch in Hz from here on</td></tr>
+        <tr><td><code>[[inpt PHON]]</code></td><td>ARPAbet input until <code>[[inpt TEXT]]</code></td></tr>
+      </tbody>
+    </table></div>
+    <div class="block"><button class="copy" data-copy="#c-embed">Copy</button><pre id="c-embed" data-lang="sh"><code>speak "Wait for it. [[slnc 800]] [[rate 320]] And now very fast."</code></pre></div>
+
+    <h2 id="files">Files</h2>
+    <h3><code>~/.config/speak/config.toml</code></h3>
+    <p>Defaults and voice aliases. Command line beats environment beats config.</p>
+    <div class="block"><button class="copy" data-copy="#c-cfg">Copy</button><pre id="c-cfg" data-lang="toml"><code>rate = 190
+lights = true
+
+[klatt]
+voice = "klatt-female"
+
+[audio]
+device = "MacBook Pro Speakers"
+
+[voices.narrator]
+voice = "klatt-calm"
+rate = 160
+params = { range = 1.4, breath = 20 }</code></pre></div>
+    <h3><code>~/.config/speak/lexicon.txt</code></h3>
+    <p>Your own pronunciations. They override every other source.</p>
+    <div class="block"><button class="copy" data-copy="#c-userlex">Copy</button><pre id="c-userlex" data-lang="lex"><code>kubectl K Y UW1 B K AH2 T AX L
+nginx EH1 N JH IH0 N EH1 K S</code></pre></div>
+    <p>Environment: <code>SPEAK_VOICE</code>, <code>SPEAK_BACKEND</code>, and <code>SPEAK_LIGHTS=0</code> to turn the strip off.</p>
+
+    <h2 id="pipeline">Pipeline</h2>
+    <p>Normalizer, chunker, lexicon and letter-to-sound, prosody, rule compiler, formant renderer. <code>--dump</code> stops at any stage.</p>
+    <div class="block"><button class="copy" data-copy="#c-dump">Copy</button><pre id="c-dump" data-lang="sh"><code>speak --dump text 'Dr. Smith paid $3.50 on 12/03/2024 at 5pm.'
+# doctor Smith paid three dollars fifty on december third twenty twenty four at five p m.
+
+speak --dump phonemes 'Hello world.'
+# HH AX L OW1 / W ER1 L D .
+
+speak --dump chunks 'Hi there. How are you?'
+# 0  .  Hi there.
+# 1  ?  How are you?</code></pre></div>
+    <p><code>--dump pho</code> gives each phone, its duration in milliseconds and pitch targets as percent and Hz:</p>
+    <div class="block"><pre><code>; chunk 0  "Hello."
+HH   59
+AX   33  0 119  100 116
+L    74  0 116  100 120
+OW1  268  0 120  30 125  100 78
+_    60</code></pre></div>
+    <p>The same format is accepted as input. <code>|</code> also ends a line, so a whole file fits on one command line:</p>
+    <div class="block"><button class="copy" data-copy="#c-phoin">Copy</button><pre id="c-phoin" data-lang="sh"><code>speak --phonemes=pho -f hello.pho
+speak --phonemes=pho "HH 59 | AX 33 0 119 100 116 | L 74 0 116 100 120 | OW1 268 0 120 100 78 | _ 60"</code></pre></div>
+
+    <h2 id="agents">Agents (MCP)</h2>
+    <p><code>speak --mcp</code> serves the Model Context Protocol on stdio, so a coding agent can talk to you.</p>
+    <div class="block"><button class="copy" data-copy="#c-mcp">Copy</button><pre id="c-mcp" data-lang="sh"><code>claude mcp add --scope user speak -- speak --mcp</code></pre></div>
+    <div class="block"><button class="copy" data-copy="#c-mcpjson">Copy</button><pre id="c-mcpjson"><code>{ "mcpServers": { "speak": { "command": "speak", "args": ["--mcp"] } } }</code></pre></div>
+    <div class="table"><table>
+      <thead><tr><th>Tool</th><th>Arguments</th></tr></thead>
+      <tbody>
+        <tr><td><code>speak</code></td><td><code>text</code>, and optionally <code>voice</code>, <code>rate</code>, <code>pitch</code>, <code>sing</code>, <code>file</code>. Returns when speech ends, or writes <code>file</code>.</td></tr>
+        <tr><td><code>list_voices</code></td><td>None</td></tr>
+      </tbody>
+    </table></div>
+    <p>Calls queue in order. Cancelling a request stops its audio. Set a default voice with <code>SPEAK_VOICE</code> in the server's environment.</p>
+
+    <h2 id="lab">speak-lab</h2>
+    <div class="table"><table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>diphones build --bootstrap</code></td><td>Build the diphone voice from the formant synthesizer, in about 12 seconds</td></tr>
+        <tr><td><code>diphones prompts</code>, <code>record</code>, <code>build</code></td><td>Record and build a diphone voice from your own voice</td></tr>
+        <tr><td><code>lexicon build</code></td><td>Compile CMUdict</td></tr>
+        <tr><td><code>lts train</code></td><td>Retrain the letter-to-sound tree</td></tr>
+        <tr><td><code>analyze</code></td><td>Pitch, formant and energy tracks of a WAV file</td></tr>
+        <tr><td><code>spectrogram</code></td><td>Spectrogram image of a WAV file</td></tr>
+        <tr><td><code>wer</code></td><td>Word error rate against a reference</td></tr>
+      </tbody>
+    </table></div>
+    <div class="block"><button class="copy" data-copy="#c-record">Copy</button><pre id="c-record" data-lang="sh"><code>speak-lab diphones prompts --out ~/speak-voice
+speak-lab diphones record --dir ~/speak-voice
+speak-lab diphones build --dir ~/speak-voice --name me
+speak -v me "This is my own voice."</code></pre></div>
+
+    <h2 id="sidepulse">SidePulse</h2>
+    <p>With a <a href="https://sidepulse.io/pro">SidePulse</a> LED strip mounted, <code>speak</code> shows a mouth on its eight LEDs in sync with the audio: wide and warm on open vowels, narrow and cool on closed ones, dark when the lips close. The previous LED state comes back afterwards. Without a strip nothing changes. <code>--no-lights</code>, <code>lights = false</code> or <code>SPEAK_LIGHTS=0</code> turn it off.</p>
+
+    <h2 id="browser">Browser build</h2>
+    <p>The <a href="./">home page</a> runs the formant synthesizer compiled to WebAssembly, 1.9 MB. CMUdict, user lexicons and the diphone backend need files and are not in it.</p>
+    <div class="block"><button class="copy" data-copy="#c-wasm">Copy</button><pre id="c-wasm" data-lang="sh"><code>just site</code></pre></div>
+
+    <h2 id="numbers">Numbers</h2>
+    <p>Apple M2 Max.</p>
+    <div class="table"><table>
+      <tbody>
+        <tr><td>Real-time factor</td><td>formant 0.0015, diphone 0.0003</td></tr>
+        <tr><td>Time to first audio</td><td>75 to 190 ms</td></tr>
+        <tr><td><code>hello world</code> to a file</td><td><code>speak</code> 10 ms, macOS <code>say</code> 589 ms</td></tr>
+        <tr><td>Binary</td><td>3.9 MB, no data files</td></tr>
+        <tr><td>Word error rate, 20 sentences, Whisper</td><td>formant 18.0 %, diphone 27.3 %, macOS <code>say</code> 3.3 %</td></tr>
+        <tr><td>Letter-to-sound phoneme error</td><td>trained tree 2.0 %, hand rules 5.7 %</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</main>
+<script type="module">
+  import { PARAMS, decorate, esc } from "./engine.js";
+  document.querySelector("#param-rows").innerHTML = PARAMS.map((p) =>
+    `<tr><td><code>${p.key}</code></td><td>${p.values ? p.values.join(", ") : `${p.lo} to ${p.hi}`}</td><td>${esc(p.what)}</td></tr>`).join("");
+  decorate();
+</script>
+</body>
+</html>

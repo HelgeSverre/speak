@@ -1,0 +1,172 @@
+/* Voices: two halves, each a stack of live spectrograms. Builds on home.css. */
+
+body.split-page {
+  overflow: auto;
+}
+
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.half {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.half + .half {
+  border-left: 1px solid var(--line);
+}
+@media (max-width: 1000px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .half + .half {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+.half-head {
+  display: grid;
+  gap: 12px;
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.half-head h1 {
+  margin: 0;
+  font: 800 clamp(34px, 4vw, 56px) / 1 var(--font);
+  letter-spacing: -0.04em;
+  background: linear-gradient(90deg, var(--fg), var(--hotter) 45%, var(--hot) 75%, var(--rose));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
+}
+.line {
+  height: auto !important;
+  padding: 12px 14px !important;
+  font: 600 18px/1.3 var(--font) !important;
+  border-radius: 10px !important;
+}
+.line.mono {
+  font: 500 15px/1.4 var(--mono) !important;
+}
+.sing-form {
+  display: grid;
+  gap: 10px;
+}
+.sing-knobs {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
+}
+.sing-knobs label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  outline: 0;
+}
+.row:hover,
+.row:focus-visible {
+  background: rgba(255, 255, 255, 0.025);
+}
+.row:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--hotter);
+}
+.row .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 14px 16px 14px 24px;
+  min-width: 0;
+}
+.row .name {
+  font: 700 15px var(--font);
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.row .desc {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--fg-3);
+}
+.row .open {
+  font: 500 11px var(--mono);
+  color: var(--fg-3);
+  text-decoration: none;
+  margin-top: 4px;
+  width: fit-content;
+}
+.row .open:hover {
+  color: var(--hot);
+}
+.row .wave {
+  position: relative;
+  min-height: 76px;
+  background: var(--ink);
+}
+.row canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+.row:hover canvas,
+.row.playing canvas {
+  opacity: 1;
+}
+.row .playhead {
+  display: none;
+}
+.row.playing .playhead {
+  display: block;
+}
+.row.playing .name {
+  color: var(--hotter);
+}
+.row .err {
+  position: absolute;
+  inset: auto 12px 8px;
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+  .row .info {
+    padding: 14px 20px 8px;
+  }
+  .half-head {
+    padding-inline: 20px;
+  }
+  .sing-knobs {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sing-knobs label:first-child {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>speak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Offline text-to-speech in Rust, by formant synthesis. A drop-in for macOS say. Type, shape the pitch, and hear it here.">
+<meta name="theme-color" content="#000004">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="home.css">
+<link rel="modulepreload" href="engine.js">
+<link rel="preload" href="pkg/speak_bg.wasm" as="fetch" type="application/wasm" crossorigin>
+</head>
+<body>
+<div class="stage">
+  <header class="top">
+    <a class="mark" href="./"><img src="logo.svg" alt="" width="20" height="20">speak</a>
+    <nav>
+      <a href="./" aria-current="page">Try it</a>
+      <a href="voices.html">Voices</a>
+      <a href="docs.html">Docs</a>
+      <a href="install.html">Install</a>
+      <a href="https://github.com/HelgeSverre/speak">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="field">
+    <label class="sr" for="text">Text to speak</label>
+    <textarea id="text" class="say" rows="1" spellcheck="false" placeholder="Type something to say">Your flight to Tokyo leaves at 6:45am from gate B12. Did you pack your passport?</textarea>
+    <button type="button" class="play" id="play" disabled aria-label="Speak">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>
+    </button>
+  </div>
+
+  <div class="controls">
+    <div class="mode" id="mode" role="radiogroup" aria-label="Mode">
+      <button type="button" role="radio" data-mode="speak" aria-checked="true">Speak</button>
+      <button type="button" role="radio" data-mode="sing" aria-checked="false">Sing</button>
+    </div>
+    <div class="voices" id="voices" role="radiogroup" aria-label="Voice"></div>
+    <div class="rate" id="rate" role="slider" tabindex="0" aria-label="Rate in words per minute"
+         aria-valuemin="80" aria-valuemax="500" aria-valuenow="175">
+      <div class="rate-fill" id="rate-fill"></div>
+      <div class="rate-label"><b id="rate-val">175</b> <span id="rate-unit">wpm</span></div>
+    </div>
+  </div>
+
+  <div class="singbar" id="singbar" hidden>
+    <div class="presets" id="presets" aria-label="Melody presets"></div>
+    <label class="sr" for="melody">Melody: one note per syllable, name:beats, R for a rest</label>
+    <input id="melody" class="melody" spellcheck="false" autocomplete="off" placeholder="C4 E4 G4:2 R C5">
+  </div>
+
+  <div class="scope" id="scope">
+    <div class="words" id="words" aria-hidden="true"></div>
+    <canvas id="spec" aria-label="Spectrogram of the speech"></canvas>
+    <svg class="pitch" id="pitch" aria-label="Pitch curve; drag a dot to change that syllable's pitch"></svg>
+    <div class="veil" id="veil" hidden></div>
+    <div class="playhead" id="playhead" hidden></div>
+    <div class="hud">
+      <span id="status" role="status">Loading</span>
+      <button type="button" class="reset" id="randomize">Randomize pitch</button>
+      <button type="button" class="reset" id="reset" hidden>Reset pitch</button>
+    </div>
+    <div class="hint-pitch" id="hint">Drag the dots to change the pitch</div>
+  </div>
+
+  <footer class="bar">
+    <div class="pulse" tabindex="0" aria-describedby="pulse-pop">
+      <div class="strip" id="strip" aria-hidden="true"></div>
+      <div class="pop" id="pulse-pop" role="tooltip">
+        <strong>SidePulse Pro</strong>
+        <p>Eight RGB LEDs that slide into the SD card slot of a MacBook Pro. With one plugged in, <code>speak</code> plays this mouth on it in sync with the voice: wide on open vowels, dark when the lips close.</p>
+        <a href="https://sidepulse.io/pro">sidepulse.io/pro</a>
+      </div>
+    </div>
+    <div class="cmdline">
+      <pre id="cmd"><code>speak</code></pre>
+      <button type="button" class="copy" id="copy">Copy</button>
+      <button type="button" class="copy" id="save-pho" hidden>.pho</button>
+      <button type="button" class="copy" id="save-wav">WAV</button>
+      <button type="button" class="copy" id="save-mp3">MP3</button>
+    </div>
+  </footer>
+</div>
+<script type="module" src="home.js"></script>
+</body>
+</html>
